@@ -1,0 +1,79 @@
+<div class="flex flex-col items-center flex-1 h-full justify-center m-4">
+  <div class="flex w-full text-white">
+    <div class="flex flex-col w-full md:w-1/2 p-4">
+      <div class="flex flex-col flex-1 justify-center mb-8">
+        <div class="w-full mt-4">
+          <h4>{{profileData.points}}</h4>
+          <form *ngIf="isEditing; else profileInfo" (ngSubmit)="updateProfile()">
+            <div class="flex flex-col mt-4">
+              <input class="flex-grow h-8 px-2 rounded-lg bg-gray-800 text-white" [(ngModel)]="profileData.firstName" name="firstName" placeholder="First Name">
+            </div>
+            <div class="flex flex-col mt-4">
+              <input class="flex-grow h-8 px-2 rounded-lg bg-gray-800 text-white" [(ngModel)]="profileData.dob" name="dob" type="date">
+            </div>
+            <div class="flex flex-col mt-4">
+              <input class="flex-grow h-8 px-2 rounded-lg bg-gray-800 text-white" [(ngModel)]="profileData.height" name="height" type="number" placeholder="Height (cm)">
+            </div>
+            <div class="flex flex-col mt-4">
+              <input class="flex-grow h-8 px-2 rounded-lg bg-gray-800 text-white" [(ngModel)]="profileData.weight" name="weight" type="number" placeholder="Weight (kg)">
+            </div>
+            <div class="flex flex-col mt-4">
+              <select class="flex-grow h-8 px-2 rounded-lg bg-gray-800 text-white" [(ngModel)]="profileData.gender" name="gender">
+                <option value="" disabled>Select Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="flex flex-col mt-8">
+              <button type="submit" class="bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold py-2 px-4 rounded-lg">
+                Save Profile
+              </button>
+            </div>
+          </form>
+          <ng-template #profileInfo class="flex justify-center items-center text-center">
+            <div class="text-lg mt-4"><strong>Name: </strong>{{ profileData.firstName }}</div>
+            <div class="text-lg mt-2" *ngIf="profileData.dob"><strong>Age: </strong> {{ age }}</div>
+            <div class="text-lg mt-2"><strong>Height:</strong> {{ profileData.height }} cm</div>
+            <div class="text-lg mt-2"><strong>Weight:</strong> {{ profileData.weight }} kg</div>
+            <div class="text-lg mt-2 capitalize"><strong>Gender:</strong> {{ profileData.gender }}</div>
+            <div class="flex flex-col mt-8 gap-4">
+              <button (click)="editProfile()" class="mt-4 bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold py-2 px-4 rounded-lg">
+                Edit Profile
+              </button>
+              <button (click)="deleteAccount()" class="bg-red-900 hover:bg-red-950 text-white text-sm font-semibold py-2 px-4 rounded-lg">
+                Delete Profile
+              </button>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+    <div class="flex flex-col justify-center items-center w-1/2 rounded-r-lg">
+      <!-- Profile Picture Display -->
+      <div class="img-wrapper rounded-full w-32 h-32 overflow-hidden relative"
+           (mouseenter)="isHovering = true"
+           (mouseleave)="isHovering = false">
+        <!-- Display Camera Icon or Profile Picture -->
+        <img *ngIf="profileData.profilePicture; else cameraIcon" 
+             class="w-full h-full object-cover" 
+             [src]="profileData.profilePicture" 
+             alt="Profile Picture" />
+        <ng-template #cameraIcon>
+          <div class="flex justify-center items-center w-full h-full bg-gray-200">
+            <i class="fas fa-camera text-gray-500 text-2xl"></i>
+          </div>
+        </ng-template>
+        <div *ngIf="isHovering" class="absolute inset-0 bg-black bg-opacity-50 flex justify-center items-center cursor-pointer" (click)="onChangePicture()">
+          <i class="fas fa-edit text-white text-2xl"></i>
+        </div>
+      </div>
+      <!-- File Input (hidden) -->
+      <input #fileInput type="file" (change)="onFileSelected($event)" accept="image/*" class="hidden" />
+      <!-- Save and Remove Buttons -->
+      <div *ngIf="profileData.profilePicture" class="mt-4 flex space-x-2">
+        <button (click)="removeProfilePicture()" class="bg-red-900 hover:bg-red-950 text-white px-4 py-2 rounded-lg">Remove Picture</button>
+      </div>
+    </div>
+  </div>
+</div>

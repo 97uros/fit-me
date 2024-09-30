@@ -1,0 +1,17 @@
+.ngx-pagination {
+  li {
+    color: white !important;
+    border-radius: 8px !important;
+    a {
+      border-radius: 8px !important;
+      color: white !important;
+      &:hover {
+        background: #047857;
+      }
+    }
+    
+  }
+  .current {
+    background: #047857 !important;
+  }
+}
