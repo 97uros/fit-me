@@ -6,6 +6,7 @@ import { Observable, map } from 'rxjs';
 export interface Exercise {
   name: string; 
   primaryMuscles: string[];
+  secondaryMuscles: string[];
   equipment: string;
   category: string;
   videoUrl?: string; // Optional property for the video URL

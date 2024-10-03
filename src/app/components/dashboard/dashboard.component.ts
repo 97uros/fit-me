@@ -95,16 +95,15 @@ export class DashboardComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     this.userId = this.auth.currentUser ? this.auth.currentUser.uid : null;
-    if (this.userId) {
-      this.fetchProfileData();
-      await this.fetchWeightHistory();
-    } else {
+    if (!this.userId) {
       this.router.navigate(['/login']);
+      return;
     }
+    this.fetchProfileData();
+    await this.fetchWeightHistory();
     await this.loadDashboardData();
     await this.loadPieChartData();
     this.setupChart();
-    this.workoutService.getMusclesWorkedLast7Days();    
   }
 
   fetchProfileData() {
@@ -112,7 +111,7 @@ export class DashboardComponent implements OnInit {
     getDoc(profileDocRef).then(docSnap => {
       if (docSnap.exists()) {
         this.profileData = docSnap.data();
-        this.userWeight = this.profileData.weight !== undefined ? this.profileData.weight : null; // Prepopulate userWeight
+        this.userWeight = this.profileData.weight || 0; // Prepopulate userWeight
       } else {
         this.errorMessage = 'No profile data found. You can create a new profile.';
       }
@@ -123,7 +122,6 @@ export class DashboardComponent implements OnInit {
 
   get age(): number | null {
     if (!this.profileData.dob) return null;
-    
     const dob = new Date(this.profileData.dob);
     const ageDiff = Date.now() - dob.getTime();
     const ageDate = new Date(ageDiff); // miliseconds from epoch
@@ -131,31 +129,25 @@ export class DashboardComponent implements OnInit {
   }
 
   async fetchWeightHistory() {
-    if (this.userId) { // Ensure userId is not null before calling
-      const weightHistory = await this.userService.getWeightHistory(this.userId);
-      this.calculateWeightDifference(weightHistory);
-    } else {
-      console.error('User ID is null');
-    }
+    if (!this.userId) return;
+    const weightHistory = await this.userService.getWeightHistory(this.userId);
+    this.calculateWeightDifference(weightHistory);
   }
 
   calculateWeightDifference(weightHistory: any[]) {
     if (weightHistory.length === 0) {
-      this.weightDifference = null; // No data available
+      this.weightDifference = null;
       return;
     }
 
-    const currentMonth = new Date().getMonth(); // Current month (0-11)
+    const currentMonth = new Date().getMonth();
     let lastMonthWeight: number | null = null;
 
-    // Iterate through the weight history to find the weight from the last month
     for (let i = weightHistory.length - 1; i >= 0; i--) {
-      const recordDate = new Date(weightHistory[i].date); // Assuming each record has a date field
+      const recordDate = new Date(weightHistory[i].date);
       const recordMonth = recordDate.getMonth();
-      const recordYear = recordDate.getFullYear();
-      // Check if the record is from the last month
       if (recordMonth === currentMonth - 1 || (currentMonth === 0 && recordMonth === 11)) {
-        lastMonthWeight = weightHistory[i].weight; // Store weight from last month
+        lastMonthWeight = weightHistory[i].weight;
         break;
       }
     }
@@ -173,8 +165,6 @@ export class DashboardComponent implements OnInit {
     const hours = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
-  
-    // Format the time as HH:MM:SS (e.g., 02:05:09)
     return `${hours.toString().padStart(2, '0')}h ${mins.toString().padStart(2, '0')}m ${secs.toString().padStart(2, '0')}s`;
   }
 
@@ -212,51 +202,45 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  async loadDashboardData(): Promise<void> {
-    const finishedWorkouts = await this.workoutService.getUserFinishedWorkouts();
-    const scheduledWorkouts = await this.workoutService.getUserScheduledWorkouts();
-    this.numberOfWorkoutsDone = finishedWorkouts.length;
-  
-    if (finishedWorkouts.length > 0) {
-      this.mostRecentWorkout = finishedWorkouts.reduce((prev, current) => {
-        return (prev.completedAt.toDate() > current.completedAt.toDate()) ? prev : current;
-      });
+  async loadDashboardData() {
+    if (!this.userId) return;
 
-      this.mostRecentWorkout.formattedDate = this.mostRecentWorkout.completedAt.toDate().toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      });
-  
-      const totalTimeInMinutes = finishedWorkouts.reduce((sum, workout) => sum + workout.timeSpent, 0);
-      this.totalTimeSpent = this.formatTime(totalTimeInMinutes);
-  
-      // Filter workouts completed today and calculate total calories burned
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // Reset time to midnight
-      const caloriesToday = finishedWorkouts
-        .filter(workout => workout.completedAt.toDate() >= today)
-        .reduce((sum, workout) => sum + workout.totalCalories, 0);
-      
-      this.caloriesBurnedToday = caloriesToday.toFixed(2);
+    try {
+      // Fetch finished workouts
+      const finishedWorkouts = await this.workoutService.getFinishedWorkouts(this.userId);
+      console.log('Finished workouts:', finishedWorkouts);
+      this.numberOfWorkoutsDone = finishedWorkouts.length;
+
+      if (finishedWorkouts.length > 0) {
+        this.mostRecentWorkout = finishedWorkouts.reduce((prev, current) =>
+          prev.completedAt.toDate() > current.completedAt.toDate() ? prev : current
+        );
+        const totalMinutes = finishedWorkouts.reduce((sum, workout) => sum + workout.timeSpent, 0);
+        this.totalTimeSpent = this.formatTime(totalMinutes);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        this.caloriesBurnedToday = finishedWorkouts
+          .filter(workout => workout.completedAt.toDate() >= today)
+          .reduce((sum, workout) => sum + workout.totalCalories, 0);
+      }
+
+      // Fetch scheduled workouts
+      const scheduledWorkouts = await this.workoutService.getScheduledWorkouts(this.userId);
+      console.log('Scheduled workouts:', scheduledWorkouts);
+      if (scheduledWorkouts.length > 0) {
+        this.nextScheduledWorkout = scheduledWorkouts.reduce((prev, current) =>
+          new Date(prev.scheduledDate) < new Date(current.scheduledDate) ? prev : current
+        );
+      }
+
+      // Fetch achievements
+      const totalPoints = await this.userService.getUserTotalPoints();
+      this.currentAchievement = getAchievement(totalPoints);
+      this.userAchievements = await this.userService.getUserAchievements();
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
     }
-  
-    if (scheduledWorkouts.length > 0) {
-      this.nextScheduledWorkout = scheduledWorkouts.reduce((prev, current) => {
-        return (new Date(prev.date) < new Date(current.date)) ? prev : current;
-      });
-    }
-     // Fetch total points and achievements
-    const totalPoints = await this.userService.getUserTotalPoints(); // Fetch total points of the user
-    const userAchievements = await this.userService.getUserAchievements();
-    this.userAchievements = userAchievements || [];
-
-    // Get the current achievement based on total points
-    this.currentAchievement = getAchievement(totalPoints);
-
-    console.log('Current Achievement:', this.currentAchievement);
-    console.log('User Achievements:', this.userAchievements);
-    
   }
 
   changeUserWeight() {
@@ -273,102 +257,46 @@ export class DashboardComponent implements OnInit {
 
   async setupChart(): Promise<void> {
     const currentWeek = this.getCurrentWeekDates();
-    const finishedWorkouts = await this.workoutService.getUserFinishedWorkouts();
+    const finishedWorkouts = await this.workoutService.getFinishedWorkouts(this.userId!);
     const workoutData = currentWeek.map(date => {
       const workout = finishedWorkouts.find(w => w.completedAt.toDate().toDateString() === date.toDateString());
       return workout ? workout.timeSpent : 0;
     });
     this.chartOptions = {
-      chart: {
-        type: 'line',
-        height: 350,
-        zoom: {
-          enabled: false
-        }
-      }, 
-      stroke: {
-        curve: 'smooth',
-        colors: ['#0284c7']
-      },
-      series: [
-        {
-          name: 'Time Spent (minutes)',
-          data: workoutData
-        }
-      ],
-      xaxis: {
-        categories: currentWeek.map(date => date.toLocaleDateString()),
-        labels: {
-          style: {
-            colors: 'white'
-          }
-        }
-      },
-      yaxis: {
-        labels: {
-          style: {
-            colors: 'white'
-          }
-        }
-      },
-      title: {
-        text: 'Workout Activity This Week',
-        align: 'center',
-        style: {
-          color: 'white'
-        }
-      },
-      tooltip: {
-        enabled: false
-      }
+      chart: { type: 'line', height: 350, zoom: { enabled: false } }, 
+      stroke: { curve: 'smooth', colors: ['#0284c7'] },
+      series: [{ name: 'Time Spent (minutes)', data: workoutData }],
+      xaxis: { categories: currentWeek.map(date => date.toLocaleDateString()), labels: { style: { colors: 'white' } } },
+      yaxis: { labels: { style: { colors: 'white' } } },
+      title: { text: 'Workout Activity This Week', align: 'center', style: { color: 'white' } },
+      tooltip: { enabled: false }
     };
   }
 
   async loadPieChartData(): Promise<void> {
-    const musclesWorkedData = await this.workoutService.getMusclesWorkedLast7Days();
+    if (!this.userId) return;
+    const musclesWorkedData = await this.workoutService.getMusclesWorkedLast7Days(this.userId);
     const series = Object.values(musclesWorkedData);
     const labels = Object.keys(musclesWorkedData);
     const customColors = ['#082f49', '#0c4a6e', '#075985', '#0369a1', '#0284c7', '#0ea5e9', '#38bdf8', '#7dd3fc', '#a5f3fc', '#e0f2fe', '#f0f9ff'];
 
     if (series.length === 0) {
       this.pieChartOptions = {
-        chart: {
-          type: 'pie',
-          height: 350
-        },
+        chart: { type: 'pie', height: 350 },
         series: [0],  // No data
         labels: ['No data available'],
         colors: customColors,
-        title: {
-          text: 'Muscles Worked in the Last 7 Days',
-          align: 'center',
-          style: {
-            color: 'white'
-          }
-        },
-        legend: {
-          show: false // Hide the legend
-        }
+        title: { text: 'Muscles Worked in the Last 7 Days', align: 'center', style: { color: 'white' } },
+        legend: { show: false }
       };
     } else {
       this.pieChartOptions = {
-        chart: {
-          type: 'pie',
-          height: 350
-        },
+        chart: { type: 'pie', height: 350 },
         series: series as number[],  // Number of times each muscle was worked
-        labels: labels,  // Muscle names
+        labels: labels,
         colors: customColors,
-        title: {
-          text: 'Muscles Worked in the Last 7 Days',
-          align: 'center',
-          style: {
-            color: 'white'
-          }
-        },
-        legend: {
-          show: false // Hide the legend
-        }
+        title: { text: 'Muscles Worked in the Last 7 Days', align: 'center', style: { color: 'white' } },
+        legend: { show: false }
       };
     }
   }
@@ -377,12 +305,10 @@ export class DashboardComponent implements OnInit {
     const today = new Date();
     const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
     const week = [];
-
     for (let i = 0; i < 7; i++) {
       week.push(new Date(startOfWeek));
       startOfWeek.setDate(startOfWeek.getDate() + 1);
     }
-
     return week;
   }
 }

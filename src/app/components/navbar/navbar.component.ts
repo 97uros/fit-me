@@ -3,7 +3,6 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { Auth, signOut } from '@angular/fire/auth';
 import { UserService } from '../../services/user.service';
-import { NotificationsService } from '../../services/notifications.service';
 
 @Component({
   selector: 'app-navbar',
@@ -18,7 +17,12 @@ export class NavbarComponent implements OnInit {
   unreadNotificationsCount: number = 0;
   isProfileMenuOpen = false;
 
-  constructor(private userService: UserService, private notificationsService: NotificationsService, private auth: Auth, private router: Router, private cdr: ChangeDetectorRef) {}
+  constructor (
+    private userService: UserService, 
+    private auth: Auth, 
+    private router: Router, 
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.userService.getUserProfile().subscribe(

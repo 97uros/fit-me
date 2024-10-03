@@ -5,7 +5,7 @@ import { Auth } from '@angular/fire/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { Firestore } from '@angular/fire/firestore';
 import { ToastrService } from 'ngx-toastr';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { UserService } from '../../services/user.service';
 import { WorkoutService } from '../../services/workout.service';
 import { MET_VALUES } from '../../utils/met-values';
@@ -47,6 +47,7 @@ export class WorkoutsComponent implements OnInit {
     private firestore: Firestore,
     private auth: Auth,
     private router: Router,
+    private route: ActivatedRoute,
     private cdr: ChangeDetectorRef, 
     private toastr: ToastrService
   ) {}
@@ -56,28 +57,48 @@ export class WorkoutsComponent implements OnInit {
     this.userService.getUserWeight().subscribe(weight => {
       this.userWeight = weight;
     });    
+    this.route.queryParams.subscribe(params => {
+      const workoutId = params['workoutId'];
+      if (workoutId) {
+        this.startWorkoutById(workoutId);
+      }
+    });
   }
 
   fetchWorkouts(): void {
-    this.workoutService.getUserWorkouts().then((data: any) => {
-      this.workouts = data;
-    }).catch((error) => {
-      this.toastr.error('Error fetching workouts:', error);
-    });
+    const user = this.auth.currentUser;
+    if (user) {
+      this.workoutService.getUserWorkouts(user.uid).then((data: any) => {
+        this.workouts = data;
+      }).catch((error) => {
+        this.toastr.error('Error fetching workouts:', error);
+      });
+    }
+  }
+
+  async startWorkoutById(workoutId: string): Promise<void> {
+    const user = this.auth.currentUser;
+    if (user) {
+      const workout = await this.workoutService.getUserWorkoutById(user.uid, workoutId);
+      if (workout) {
+        this.startWorkout(workout); // Start the workout
+      } else {
+        this.toastr.error('Workout not found!');
+      }
+    }
   }
 
   editWorkout(workout: any): void {
     this.editingWorkout = { ...workout };
   }
 
-  deleteWorkout(workoutId: string): void {
-    this.workoutService.deleteWorkout(workoutId).then(() => {
+  async deleteWorkout(workoutId: string): Promise<void> {
+    const user = this.auth.currentUser;
+    if (user) {
+      await this.workoutService.deleteWorkout(user.uid, workoutId);
       this.workouts = this.workouts.filter(workout => workout.id !== workoutId);
       this.toastr.success('Workout deleted successfully!');
-    }).catch(error => {
-      console.error('Error deleting workout:', error);
-      this.toastr.error('Failed to delete workout');
-    });
+    }
   }
 
   moveExerciseUp(index: number): void {
@@ -97,20 +118,18 @@ export class WorkoutsComponent implements OnInit {
     this.toastr.success('Exercise removed successfully!'); // Use Toastr notification
   }
 
-  saveWorkout(): void {
+  async saveWorkout(): Promise<void> {
     if (this.editingWorkout) {
-      const workoutId = this.editingWorkout.id;
-      this.workoutService.updateWorkout(workoutId, this.editingWorkout).then(() => {
-        const index = this.workouts.findIndex(workout => workout.id === workoutId);
+      const user = this.auth.currentUser;
+      if (user) {
+        await this.workoutService.updateWorkout(user.uid, this.editingWorkout.id, this.editingWorkout);
+        const index = this.workouts.findIndex(workout => workout.id === this.editingWorkout.id);
         if (index !== -1) {
           this.workouts[index] = { ...this.editingWorkout };
           this.toastr.success('Workout saved successfully!');
         }
         this.cancelEdit();
-      }).catch(error => {
-        console.error('Error saving workout:', error);
-        this.toastr.error('Failed to save workout');
-      });
+      }
     }
   }
 
@@ -129,7 +148,6 @@ export class WorkoutsComponent implements OnInit {
     this.progress = 0;
     this.startTimer();
     this.toastr.info(`Starting workout: ${workout.name}`);
-    console.log(this.startingWorkout.exercises);
   }
 
   startTimer(): void {
@@ -178,6 +196,7 @@ export class WorkoutsComponent implements OnInit {
     this.checkAllExercisesDone();
     this.cdr.detectChanges();
   }
+
   checkAllExercisesDone(): void {
     const allDone = this.startingWorkout.exercises.every((exercise: any) => exercise.done);
     if (allDone) {
@@ -260,15 +279,16 @@ export class WorkoutsComponent implements OnInit {
         console.error('Error updating points:', error);
         this.toastr.error('Failed to update points');
       });
-      // Save the finished workout including total calories burned
-      this.workoutService.saveFinishedWorkout(this.startingWorkout, this.elapsedSeconds, totalCalories).then(() => {
-        this.toastr.success('Workout completed! Great job!');
-        this.toastr.info(`You burned approximately ${totalCalories.toFixed(0)} calories!`);
-      }).catch(error => {
-        console.error('Error saving finished workout:', error);
-        this.toastr.error('Failed to save finished workout');
-      });
-  
+      const user = this.auth.currentUser;
+      if(user) {
+        this.workoutService.completeWorkout(user.uid, null, this.startingWorkout, durationInSeconds, totalCalories).then(() => {
+          this.toastr.success('Workout completed! Great job!');
+          this.toastr.info(`You burned approximately ${totalCalories.toFixed(0)} calories!`);
+        }).catch(error => {
+          console.error('Error saving finished workout:', error);
+          this.toastr.error('Failed to save finished workout');
+        });
+      }
       this.startingWorkout.completed = true;
       clearInterval(this.timer);
     }

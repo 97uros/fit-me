@@ -6,6 +6,7 @@ import { NgxPaginationModule } from 'ngx-pagination';
 import { Router, RouterLink } from '@angular/router';
 import { WorkoutService } from '../../services/workout.service';
 import { MET_VALUES } from '../../utils/met-values';
+import { Auth } from '@angular/fire/auth';
 
 @Component({
   selector: 'app-exercises',
@@ -42,13 +43,16 @@ export class ExercisesComponent implements OnInit {
 
   // Workouts
 
-  workouts: any[] = [];  // Initialize with the existing workouts, fetched from workout service or locally stored
+  workouts: any[] = [];
   showWorkoutSelectionModal = false;
   newWorkoutName = '';
+  userId: string | null = null; 
 
-  constructor(private exerciseService: ExerciseService, private workoutService: WorkoutService) {}
+  constructor(private exerciseService: ExerciseService, private workoutService: WorkoutService,  private auth: Auth) {}
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
+    this.userId = this.auth.currentUser ? this.auth.currentUser.uid : null; // Get the user ID
+
     this.exerciseService.getExercises().subscribe({
       next: (data) => {
         this.exercises = data;
@@ -112,7 +116,7 @@ export class ExercisesComponent implements OnInit {
   // Filters exercises by selected criteria
   filterExercises(): void {
     this.filteredExercises = this.exercises.filter(exercise => {
-      const matchesMuscle = this.selectedMuscle ? exercise.primaryMuscles.includes(this.selectedMuscle) : true;
+      const matchesMuscle = this.selectedMuscle ? exercise.primaryMuscles && exercise.secondaryMuscles.includes(this.selectedMuscle) : true;
       const matchesEquipment = this.selectedEquipment ? exercise.equipment === this.selectedEquipment : true;
       
       // Check if exercise category matches any of the selected categories
@@ -152,8 +156,11 @@ export class ExercisesComponent implements OnInit {
   openWorkoutSelection(exercise: any) {
     this.selectedExercise = exercise;
     this.showWorkoutSelectionModal = true;
-    // Fetch workouts from Firestore, not localStorage
-    this.workoutService.getUserWorkouts().then(workouts => this.workouts = workouts);
+
+    // Fetch workouts from Firestore
+    if (this.userId) {
+      this.workoutService.getUserWorkouts(this.userId).then(workouts => this.workouts = workouts);
+    }
   }
 
   sanitizeExerciseData<T extends object>(data: T): Partial<T> {
@@ -166,49 +173,42 @@ export class ExercisesComponent implements OnInit {
   }
   
   async addExerciseToWorkout(workout: any) {
-    // Remove undefined fields before adding the exercise to the workout
     const sanitizedExercise = this.sanitizeExerciseData(this.selectedExercise);
-    
-    // Only include videoUrl if it exists
     const exerciseToAdd: any = {
       ...sanitizedExercise,
       sets: 0,
       reps: 0
     };
-    
+
     if (this.selectedExercise.videoUrl) {
       exerciseToAdd.videoUrl = this.selectedExercise.videoUrl;
     }
-  
+
     workout.exercises.push(exerciseToAdd);
-  
-    // Ensure no undefined fields exist in the workout object either
-    const sanitizedWorkout = this.sanitizeExerciseData(workout);   
-    await this.workoutService.updateWorkout(workout.id, sanitizedWorkout);
+    
+    // Save the workout instance
+    await this.workoutService.scheduleWorkout(this.userId!, workout.id, new Date()); // Schedule workout with current date
     this.closeWorkoutSelectionModal();
   }
   
   async createAndAddWorkout() {
-    // Sanitize the selectedExercise to remove any undefined fields
     const sanitizedExercise = this.sanitizeExerciseData(this.selectedExercise);
-  
-    // Only include videoUrl if it exists
     const exerciseToAdd: any = {
       ...sanitizedExercise,
       sets: 0,
       reps: 0
     };
-  
+
     if (this.selectedExercise.videoUrl) {
       exerciseToAdd.videoUrl = this.selectedExercise.videoUrl;
     }
-  
+
     const newWorkout = {
       name: this.newWorkoutName,
       exercises: [exerciseToAdd]
     };
-  
-    await this.workoutService.addWorkout(newWorkout);
+
+    await this.workoutService.addWorkout(this.userId!, newWorkout); // Pass userId here
     this.newWorkoutName = '';
     this.closeWorkoutSelectionModal();
   }
