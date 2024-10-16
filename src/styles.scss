@@ -37,7 +37,7 @@ $fit-me-theme: mat.define-theme((
 @import "./app/components/dashboard/dashboard.component.scss";
 @import "./app/components/exercises/exercises.component.scss";
 @import "./app/components/workouts/workouts.component.scss";
-@import '../node_modules/angular-calendar/css/angular-calendar.css';
+@import "./app/components/body-stats/body-stats.component.scss";
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap');
 @tailwind base;
 @tailwind components;

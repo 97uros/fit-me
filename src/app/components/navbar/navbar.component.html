@@ -15,6 +15,12 @@
         </a>
       </li>
       <li>
+        <a aria-label="dashboard" class="relative px-4 py-3 flex items-center space-x-4 rounded-lg text-white hover:bg-black/25" routerLink="/body" routerLinkActive="bg-black/25">
+          <i class="fa-solid fa-person" routerLinkActive="text-sky-800"></i>
+          <span class="-mr-1 font-medium">Body Stats</span>
+        </a>
+      </li>
+      <li>
         <a class="px-4 py-3 flex items-center space-x-4 rounded-md text-white group hover:bg-black/25" routerLink="/exercises" routerLinkActive="bg-black/25">
           <i class="fa-solid fa-person-running" routerLinkActive="text-sky-800"></i>
           <span class="">Exercises</span>
@@ -50,6 +56,9 @@
 <nav class="fixed bottom-0 left-0 right-0 z-100 bg-black text-white flex justify-around py-3 shadow-lg md:hidden">
   <a title="Dashboard" routerLink="/dashboard" routerLinkActive="text-sky-800" class="flex flex-col items-center">
     <i class="fa-solid fa-chart-line text-xl"></i>
+  </a>
+  <a title="Body Stats" routerLink="/body" routerLinkActive="text-sky-800" class="flex flex-col items-center">
+    <i class="fa-solid fa-person text-xl"></i>
   </a>
   <a title="Exercises" routerLink="/exercises" routerLinkActive="text-sky-800" class="flex flex-col items-center">
     <i class="fa-solid fa-person-running text-xl"></i>
