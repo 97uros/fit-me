@@ -17,6 +17,7 @@ import {
   ApexMarkers,
   ApexOptions,
   ApexFill,
+  ApexTheme,
 } from 'ng-apexcharts';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -82,6 +83,7 @@ export class DashboardComponent implements OnInit {
     title: ApexTitleSubtitle;
     legend: ApexLegend;
     colors: string[];
+    theme: ApexTheme;
   }> = {};
 
   constructor(
@@ -275,14 +277,17 @@ export class DashboardComponent implements OnInit {
 
   async loadPieChartData(): Promise<void> {
     if (!this.userId) return;
+  
     const musclesWorkedData = await this.workoutService.getMusclesWorkedLast7Days(this.userId);
-    const series = Object.values(musclesWorkedData);
-    const labels = Object.keys(musclesWorkedData);
-    const customColors = ['#082f49', '#0c4a6e', '#075985', '#0369a1', '#0284c7', '#0ea5e9', '#38bdf8', '#7dd3fc', '#a5f3fc', '#e0f2fe', '#f0f9ff'];
-
+    const series = Object.values(musclesWorkedData).map(data => data.count); // Extract counts
+    const labels = Object.keys(musclesWorkedData);  // Extract muscle names
+  
+    const customColors = ['#075985', '#0369a1', '#0284c7', '#0ea5e9', '#38bdf8', '#7dd3fc', '#a5f3fc', '#e0f2fe', '#f0f9ff'];
+  
+    // If there's no data, show a message
     if (series.length === 0) {
       this.pieChartOptions = {
-        chart: { type: 'pie', height: 350 },
+        chart: { type: 'donut', height: 350 },
         series: [0],  // No data
         labels: ['No data available'],
         colors: customColors,
@@ -291,15 +296,16 @@ export class DashboardComponent implements OnInit {
       };
     } else {
       this.pieChartOptions = {
-        chart: { type: 'pie', height: 350 },
-        series: series as number[],  // Number of times each muscle was worked
-        labels: labels,
-        colors: customColors,
-        title: { text: 'Muscles Worked in the Last 7 Days', align: 'center', style: { color: 'white' } },
-        legend: { show: false }
+        chart: { type: 'donut', height: 350 },
+        series: series,  // Number of times each muscle was worked
+        labels: labels,  // Muscle names
+        colors: customColors.slice(0, series.length),
+        title: { text: 'Muscles Worked in the Last 7 Days', align: 'center', margin: 20, style: { color: 'white' } },
+        legend: { show: true, labels: { colors: 'white' }, position: 'bottom' }
       };
     }
   }
+  
 
   getCurrentWeekDates(): Date[] {
     const today = new Date();

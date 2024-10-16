@@ -156,7 +156,6 @@ export class ExercisesComponent implements OnInit {
   openWorkoutSelection(exercise: any) {
     this.selectedExercise = exercise;
     this.showWorkoutSelectionModal = true;
-
     // Fetch workouts from Firestore
     if (this.userId) {
       this.workoutService.getUserWorkouts(this.userId).then(workouts => this.workouts = workouts);
@@ -166,7 +165,7 @@ export class ExercisesComponent implements OnInit {
   sanitizeExerciseData<T extends object>(data: T): Partial<T> {
     return (Object.keys(data) as Array<keyof T>).reduce((acc: Partial<T>, key: keyof T) => {
       if (data[key] !== undefined) {
-        acc[key] = data[key]; // This will now work as acc and data are properly typed
+        acc[key] = data[key];
       }
       return acc;
     }, {} as Partial<T>);
@@ -179,15 +178,18 @@ export class ExercisesComponent implements OnInit {
       sets: 0,
       reps: 0
     };
-
+  
     if (this.selectedExercise.videoUrl) {
       exerciseToAdd.videoUrl = this.selectedExercise.videoUrl;
     }
-
+  
     workout.exercises.push(exerciseToAdd);
-    
+  
+    // Remove date fields (if present) that Firestore may reject
+    const { createdAt, updatedAt, ...cleanedWorkout } = workout;
+  
     // Save the workout instance
-    await this.workoutService.scheduleWorkout(this.userId!, workout.id, new Date()); // Schedule workout with current date
+    await this.workoutService.updateWorkout(this.userId!, workout.id, cleanedWorkout);
     this.closeWorkoutSelectionModal();
   }
   

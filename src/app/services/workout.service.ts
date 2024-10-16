@@ -104,14 +104,13 @@ export class WorkoutService {
     return missedWorkouts;
   }
 
-  // 9. Get muscles worked in the last 7 days from finished workouts
-  async getMusclesWorkedLast7Days(userId: string): Promise<{ [key: string]: number }> {
+  async getMusclesWorkedLast7Days(userId: string): Promise<{ [key: string]: { lastWorked: Date, count: number } }> {
     const finishedWorkoutsCollection = collection(this.firestore, `users/${userId}/workoutInstances`);
     const snapshot = await getDocs(finishedWorkoutsCollection);
-    const musclesCount: { [key: string]: number } = {};
+    const musclesData: { [key: string]: { lastWorked: Date, count: number } } = {}; // Updated structure
     const today = new Date();
-    const promises: Promise<void>[] = []; // Array to hold promises
-
+    const promises: Promise<void>[] = [];
+  
     snapshot.forEach(doc => {
       const workout = doc.data();
       const completedAt = workout['completedAt']?.toDate(); // Ensure completedAt is a Firestore Timestamp
@@ -123,7 +122,16 @@ export class WorkoutService {
             baseWorkout.exercises.forEach((exercise: any) => {
               if (exercise.primaryMuscles && Array.isArray(exercise.primaryMuscles)) {
                 exercise.primaryMuscles.forEach((muscle: string) => {
-                  musclesCount[muscle] = (musclesCount[muscle] || 0) + 1; // Increment muscle count
+                  // Initialize the muscle data if it doesn't exist
+                  if (!musclesData[muscle]) {
+                    musclesData[muscle] = { lastWorked: completedAt, count: 1 };
+                  } else {
+                    // Update count and check if this workout was more recent than the last one recorded
+                    musclesData[muscle].count += 1;
+                    if (completedAt > musclesData[muscle].lastWorked) {
+                      musclesData[muscle].lastWorked = completedAt;
+                    }
+                  }
                 });
               }
             });
@@ -132,11 +140,11 @@ export class WorkoutService {
         promises.push(promise); // Add the promise to the array
       }
     });
-
+  
     // Wait for all promises to resolve
     await Promise.all(promises);
-
-    return musclesCount;
+  
+    return musclesData;
   }
 
   // 10. Update a base workout
