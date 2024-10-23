@@ -1,5 +1,5 @@
 <div class="container mx-auto px-4 py-4 mb-10 lg:mb-0">
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mt-1 mb-2 md:mb-4">
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-1 mb-4">
     <!-- User Info Section -->
     <div class="user-info relative flex col-span-12 lg:col-span-2 justify-between items-center bg-gray-800 hover:bg-gray-700 text-white rounded-xl shadow-lg p-4 gap-4">
       <div class="w-full flex flex-col justify-center items-start text-left">
@@ -52,14 +52,14 @@
   </div>
 
   <!-- Trackers Section -->
-  <div class="trackers grid grid-cols-auto lg:grid-cols-3 gap-2 md:gap-4 mt-2 mb-4">
+  <div class="trackers grid grid-cols-auto lg:grid-cols-3 gap-2 gap-4 mt-2 mb-4">
     <app-weight-tracker [isMetric]="isMetric"></app-weight-tracker>
     <app-steps-tracker [isMetric]="isMetric" [stepGoal]="stepGoal"></app-steps-tracker>
     <app-calories-tracker [caloriesGoal]="caloriesGoal" [caloriesBurnedToday]="caloriesBurnedToday"></app-calories-tracker>
   </div>
 
   <!-- Charts & Body Stats -->
-  <div class="stats grid grid-cols-auto lg:grid-cols-3 gap-2 md:gap-4 mt-2 mb-4">
+  <div class="stats grid grid-cols-auto lg:grid-cols-3 gap-4 mt-2 mb-4">
     <app-charts class="lg:col-span-2" [userId]="userId" (chartReady)="onChartReady()"></app-charts>
     <app-body-stats></app-body-stats>
   </div>

@@ -1,4 +1,4 @@
-<div *ngIf="startingWorkout && currentExerciseIndex !== null" class="fixed inset-0 z-40 w-full h-full flex flex-col md:flex-row bg-gray-900 text-white">
+<div *ngIf="startingWorkout && currentExerciseIndex !== null" class="fixed inset-0 z-40 w-full h-full flex flex-col md:flex-row bg-gray-900 text-white overflow-y-auto">
   <!-- Left Section: Exercise Image with Gradient Overlay -->
   <div class="relative w-full md:w-1/2 flex-shrink-0">
     <img [src]="'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/' + currentImage(startingWorkout.exercises[currentExerciseIndex])"
@@ -10,7 +10,7 @@
   <!-- Right Section: Exercise Details and Controls -->
   <div class="w-full md:w-1/2 flex flex-col justify-between p-8">
     <!-- Workout Title -->
-    <h2 class="text-3xl font-bold text-center uppercase mb-4">{{ startingWorkout.name }}</h2>
+    <h2 class="text-2xl font-bold text-center uppercase mb-4">{{ startingWorkout.name }}</h2>
 
     <!-- Timer Display -->
     <div class="text-center text-2xl mb-4">
@@ -49,7 +49,7 @@
     <!-- Rest Controls -->
     <div class="flex gap-4 mb-4">
       <button 
-        class="w-full bg-gray-700 text-white font-bold px-4 py-2 rounded-full disabled:opacity-50" 
+        class="w-full bg-gray-700 text-sm text-white font-bold px-4 py-2 rounded-xl lg:rounded-full disabled:opacity-50" 
         disabled>
         Rest ({{ restTimeRemaining }})
         <i class="fa-solid fa-clock ml-2"></i>
@@ -57,14 +57,14 @@
       <button 
         (click)="skipRest()" 
         [disabled]="!isResting" 
-        class="w-full bg-gray-700 text-white font-bold px-4 py-2 rounded-full disabled:opacity-50">
+        class="w-full bg-gray-700 text-sm text-white font-bold px-4 py-2 rounded-xl lg:rounded-full disabled:opacity-50">
         Skip Rest
         <i class="fa-solid fa-forward ml-2"></i>
       </button>
       <button 
         (click)="addRestTime()" 
         [disabled]="!isResting" 
-        class="w-full bg-gray-700 text-white font-bold px-4 py-2 rounded-full disabled:opacity-50">
+        class="w-full bg-gray-700 text-sm text-white font-bold px-4 py-2 rounded-xl lg:rounded-full disabled:opacity-50">
         +10s
         <i class="fa-solid fa-plus ml-2"></i>
       </button>

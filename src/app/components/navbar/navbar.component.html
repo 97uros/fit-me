@@ -45,11 +45,11 @@
   </div>
   <hr class="border-white/20" />
   <div class="px-6 -mx-6 pt-4 flex flex-col items-start">
-    <button aria-label="Profile Settings" class="px-4 py-3 flex items-center space-x-4 rounded-md text-white group hover:bg-gray-700 transition duration-200" routerLink="/profile">
+    <button aria-label="Profile Settings" class="px-4 py-3 flex items-center space-x-4 rounded-md text-white group" routerLink="/profile">
       <i class="fa-solid fa-user" routerLinkActive="text-green-600"></i>
       <span>Profile Settings</span>
     </button>
-    <button aria-label="Logout" class="px-4 py-3 flex items-center space-x-4 rounded-md text-white group hover:bg-gray-700 transition duration-200" (click)="logout()">
+    <button aria-label="Logout" class="px-4 py-3 flex items-center space-x-4 rounded-md text-white group" (click)="logout()">
       <i class="fa-solid fa-arrow-right-from-bracket"></i>
       <span>Logout</span>
     </button>
@@ -72,10 +72,10 @@
     <i class="fa-solid fa-user text-xl"></i>
   </a>
   <div *ngIf="isProfileMenuOpen" class="fixed bottom-16 right-5 bg-gray-800 text-white rounded-lg p-3 shadow-lg z-20">
-    <button class="w-full py-2 text-left hover:bg-gray-700 transition duration-200" routerLink="/profile">
+    <button class="w-full py-2 text-left transition duration-200" routerLink="/profile">
       <i class="fa-solid fa-user"></i> Profile Settings
     </button>
-    <button class="w-full py-2 text-left hover:bg-gray-700 transition duration-200" (click)="logout()">
+    <button class="w-full py-2 text-left transition duration-200" (click)="logout()">
       <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
     </button>
   </div>
