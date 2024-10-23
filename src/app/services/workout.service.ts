@@ -107,45 +107,45 @@ export class WorkoutService {
   async getMusclesWorkedLast7Days(userId: string): Promise<{ [key: string]: { lastWorked: Date, count: number } }> {
     const finishedWorkoutsCollection = collection(this.firestore, `users/${userId}/workoutInstances`);
     const snapshot = await getDocs(finishedWorkoutsCollection);
-    const musclesData: { [key: string]: { lastWorked: Date, count: number } } = {}; // Updated structure
+    const musclesData: { [key: string]: { lastWorked: Date, count: number } } = {};
     const today = new Date();
     const promises: Promise<void>[] = [];
-  
+
     snapshot.forEach(doc => {
       const workout = doc.data();
-      const completedAt = workout['completedAt']?.toDate(); // Ensure completedAt is a Firestore Timestamp
-      // Check if the workout was completed in the last 7 days
+      const completedAt = workout['completedAt']?.toDate();
       if (completedAt && completedAt >= startOfDay(subDays(today, 7)) && completedAt <= endOfDay(today)) {
-        // Fetch base workout data based on workoutId
         const promise = this.getWorkoutById(userId, workout['workoutId']).then(baseWorkout => {
-          if (baseWorkout.exercises && Array.isArray(baseWorkout.exercises)) {
-            baseWorkout.exercises.forEach((exercise: any) => {
-              if (exercise.primaryMuscles && Array.isArray(exercise.primaryMuscles)) {
-                exercise.primaryMuscles.forEach((muscle: string) => {
-                  // Initialize the muscle data if it doesn't exist
-                  if (!musclesData[muscle]) {
-                    musclesData[muscle] = { lastWorked: completedAt, count: 1 };
-                  } else {
-                    // Update count and check if this workout was more recent than the last one recorded
-                    musclesData[muscle].count += 1;
-                    if (completedAt > musclesData[muscle].lastWorked) {
-                      musclesData[muscle].lastWorked = completedAt;
-                    }
-                  }
-                });
-              }
-            });
+          if (!baseWorkout || !Array.isArray(baseWorkout.exercises)) {
+            console.error(`Workout not found or does not have exercises for ID: ${workout['workoutId']}`);
+            return;
           }
+
+          baseWorkout.exercises.forEach((exercise: any) => {
+            if (exercise.primaryMuscles && Array.isArray(exercise.primaryMuscles)) {
+              exercise.primaryMuscles.forEach((muscle: string) => {
+                if (!musclesData[muscle]) {
+                  musclesData[muscle] = { lastWorked: completedAt, count: 1 };
+                } else {
+                  musclesData[muscle].count += 1;
+                  if (completedAt > musclesData[muscle].lastWorked) {
+                    musclesData[muscle].lastWorked = completedAt;
+                  }
+                }
+              });
+            }
+          });
+        }).catch(error => {
+          console.error(`Error fetching workout data for ID ${workout['workoutId']}:`, error);
         });
-        promises.push(promise); // Add the promise to the array
+
+        promises.push(promise);
       }
     });
-  
-    // Wait for all promises to resolve
     await Promise.all(promises);
-  
     return musclesData;
   }
+
 
   // 10. Update a base workout
   async updateWorkout(userId: string, workoutId: string, workout: any): Promise<void> {

@@ -14,7 +14,7 @@ export const pointsTreshold = {
 };
 
 export const achievements = {
-  level_1: { name:'Rookie', badgeUrl: 'https://firebasestorage.googleapis.com/v0/b/fit-me-a409a.appspot.com/o/achievements%2Frookie.png?alt=media&token=486734bc-9cad-4fae-a903-c57a47d5a091'},
+  level_1: { name:'Rookie', badgeUrl: 'https://firebasestorage.googleapis.com/v0/b/fit-me-a409a.appspot.com/o/achievements%2Frookie.png?alt=media&token=c0cda5e2-3c9c-4ed5-a21e-e6fa5d6a8585'},
   level_2: { name:'Adventurer', badgeUrl: 'https://firebasestorage.googleapis.com/v0/b/fit-me-a409a.appspot.com/o/achievements%2Fadventurer.png?alt=media&token=f6998f64-0db5-4a4f-af95-e97600bcdfc9'},
   level_3: { name:'Warrior', badgeUrl: 'https://firebasestorage.googleapis.com/v0/b/fit-me-a409a.appspot.com/o/achievements%2Fwarrior.png?alt=media&token=d63f8c29-6105-48c2-8792-d920e8c2256a'},
   level_4: { name:'Master', badgeUrl: ''},

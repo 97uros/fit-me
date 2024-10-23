@@ -2,11 +2,9 @@ import { Component, effect, ViewEncapsulation } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ExercisesComponent } from './components/exercises/exercises.component';
 import { NavbarComponent } from './components/navbar/navbar.component';
-import { TopBarComponent } from './components/top-bar/top-bar.component';
 import { WorkoutsComponent } from './components/workouts/workouts.component';
 import { CalendarComponent } from './components/calendar/calendar.component';
 import { LoginComponent } from './components/login/login.component';
-import { RegisterComponent } from './components/register/register.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { Auth, onAuthStateChanged } from '@angular/fire/auth';
 import { CommonModule } from '@angular/common';
@@ -18,14 +16,12 @@ import { CommonModule } from '@angular/common';
     RouterLink, 
     RouterLinkActive, 
     RouterOutlet, 
-    LoginComponent, 
-    RegisterComponent, 
+    LoginComponent,
     DashboardComponent, 
     ExercisesComponent, 
     WorkoutsComponent, 
     CalendarComponent, 
     NavbarComponent,
-    TopBarComponent, 
     CommonModule ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'

@@ -6,23 +6,22 @@ import { Firestore, collection, addDoc, getDocs, deleteDoc } from '@angular/fire
 import { Auth } from '@angular/fire/auth';
 import { WorkoutService } from '../../services/workout.service';
 import { ToastrService } from 'ngx-toastr';
-import { doc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { Router } from '@angular/router';
-import { NotificationService } from '../../services/notification.service';
+
 interface Exercise {
   name: string;
   sets: number;
   reps: number;
   done: boolean;
 }
-
 interface Workout {
-  id: string; // Change this to string if it's a string in Firestore
+  id: string; 
   name: string;
   exercises: Exercise[];
-  scheduledTime?: string; // Optional time for scheduled workout
-  scheduledDate?: string; // Date when the workout is scheduled
-  status?: 'completed' | 'missed' | 'scheduled' | 'none'; // Include 'scheduled'
+  scheduledTime?: string;
+  scheduledDate?: string;
+  status?: 'completed' | 'missed' | 'scheduled' | 'none';
 }
 
 @Component({
@@ -39,7 +38,7 @@ export class CalendarComponent implements OnInit {
   year: number = 0;
   scheduledWorkouts: { [dateString: string]: Workout[] } = {};
   finishedWorkouts: any[] = [];
-  workouts: Workout[] = []; // List of available workouts
+  workouts: Workout[] = [];
   selectedDate: Date | null = null;
   hoveredDate: string | null = null;
   selectedWorkout: Workout | null = null;
@@ -54,7 +53,6 @@ export class CalendarComponent implements OnInit {
     private auth: Auth, 
     private workoutService: WorkoutService,
     private router: Router,
-    private notificationService: NotificationService,
     private toastr: ToastrService,
   ) {}
 
@@ -63,24 +61,6 @@ export class CalendarComponent implements OnInit {
     this.loadWorkouts();
     this.loadScheduledWorkouts();
     this.loadFinishedWorkouts();
-  }
-
-  scheduleWorkoutReminder(workout: Workout) {
-    const now = new Date().getTime();
-    const workoutTime = new Date(workout.scheduledDate + ' ' + workout.scheduledTime).getTime(); // combine date & time
-    const timeDifference = workoutTime - now;
-  
-    if (timeDifference > 0) {
-      // Trigger reminder 15 minutes before workout
-      const reminderTime = timeDifference - 15 * 60 * 1000; // 15 minutes in milliseconds
-  
-      setTimeout(() => {
-        this.notificationService.showReminder(
-          'Workout Reminder',
-          `Your workout "${workout.name}" is in 15 minutes!`
-        );
-      }, reminderTime);
-    }
   }
 
   async loadWorkouts() {
@@ -96,27 +76,44 @@ export class CalendarComponent implements OnInit {
       const scheduledWorkouts: { [dateString: string]: Workout[] } = {};
       try {
         const workoutInstances = await this.workoutService.getScheduledWorkouts(user.uid);
-        workoutInstances.forEach(instance => {
+        workoutInstances.forEach(async instance => {
           let scheduledDate: Date;     
-          // Check if scheduledDate is a Firestore Timestamp
           if (instance.scheduledDate && typeof instance.scheduledDate.toDate === 'function') {
             scheduledDate = instance.scheduledDate.toDate();
           } else if (typeof instance.scheduledDate === 'string') {
-            scheduledDate = new Date(instance.scheduledDate); // Convert string to Date
+            scheduledDate = new Date(instance.scheduledDate);
           } else {
             console.warn('Invalid scheduledDate format:', instance.scheduledDate);
-            return; // Skip this instance if the format is invalid
+            return;
           }
-          const dateString = scheduledDate.toDateString(); // Ensure it’s a string
+          
+          const dateString = scheduledDate.toDateString();
           if (!scheduledWorkouts[dateString]) {
             scheduledWorkouts[dateString] = [];
           }
-          scheduledWorkouts[dateString].push(instance);
+
+          // Check if the workout is missed
+          if (this.isPastDay(scheduledDate)) {
+            // If missed, mark it as missed and update Firestore
+            instance.status = 'missed';
+            await this.markWorkoutAsMissed(instance);
+          } else {
+            // Only keep future scheduled workouts
+            scheduledWorkouts[dateString].push(instance);
+          }
         });
         this.scheduledWorkouts = scheduledWorkouts;
       } catch (error) {
         this.toastr.error('Error loading scheduled workouts: ' + (error as any).message);
       }
+    }
+  }
+
+  async markWorkoutAsMissed(workout: Workout) {
+    const user = this.auth.currentUser;
+    if (user) {
+      const workoutRef = doc(this.firestore, `users/${user.uid}/workoutInstances/${workout.id}`);
+      await updateDoc(workoutRef, { status: 'missed' });
     }
   }
 
@@ -206,15 +203,15 @@ export class CalendarComponent implements OnInit {
   isPastDay(day: Date | null): boolean {
     if (!day) return false;
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time to midnight to compare only the date
-    return day.getTime() < today.getTime(); // Compare day timestamps
+    today.setHours(0, 0, 0, 0);
+    return day.getTime() < today.getTime();
   }
 
   getDayClasses(day: Date | null): string {
-    if (!day) return 'rounded-md p-2';
+    if (!day) return 'rounded-full p-2';
     return [
-      'rounded-md p-2',
-      this.isToday(day) ? 'bg-sky-800 text-white font-bold uppercase hover:bg-sky-700' : '',
+      'rounded-full p-2',
+      this.isToday(day) ? 'bg-green-600 text-white font-bold uppercase hover:bg-green-700' : '',
       this.isPastDay(day) ? 'bg-transparent text-gray-400 disabled:cursor-not-allowed disabled:opacity-50' : ''
     ].join(' ');
   }
@@ -232,20 +229,17 @@ export class CalendarComponent implements OnInit {
         ...this.selectedWorkout, 
         scheduledTime: this.selectedTime, 
         scheduledDate: dateString,
-        status: 'scheduled' as 'scheduled' // Ensure this matches the expected type
+        status: 'scheduled' as 'scheduled'
       }; 
-      // Save scheduled workout to Firestore in workoutInstances
       const user = this.auth.currentUser;
       if (user) {
         const workoutRef = collection(this.firestore, `users/${user.uid}/workoutInstances`);
         await addDoc(workoutRef, workoutWithTime);
       }
-      // Update local state to reflect the scheduled workout
       if (!this.scheduledWorkouts[dateString]) {
         this.scheduledWorkouts[dateString] = [];
       }
       this.scheduledWorkouts[dateString].push(workoutWithTime);
-      this.scheduleWorkoutReminder(this.selectedWorkout); // Keep the local state for display
       this.selectedWorkout = null;
       this.cancelSelection();
     }
@@ -256,12 +250,10 @@ export class CalendarComponent implements OnInit {
     if (this.scheduledWorkouts[dateString]) {
       const workoutToDelete = this.scheduledWorkouts[dateString].find(workout => workout.id === workoutId);
       if (workoutToDelete) {
-        // Remove from local state
         this.scheduledWorkouts[dateString] = this.scheduledWorkouts[dateString].filter(workout => workout.id !== workoutId);
         if (this.scheduledWorkouts[dateString].length === 0) {
           delete this.scheduledWorkouts[dateString];
         }
-        // Remove from Firestore
         const user = this.auth.currentUser;
         if (user) {
           const scheduledCollection = collection(this.firestore, `users/${user.uid}/workoutInstances`);
@@ -275,7 +267,6 @@ export class CalendarComponent implements OnInit {
   }
 
   startWorkout(workout: Workout): void {
-    // Navigate to the workout component and pass the selected workout
     this.router.navigate(['/workouts'], { queryParams: { workoutId: workout.id } });
   }
 

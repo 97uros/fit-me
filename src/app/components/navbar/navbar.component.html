@@ -1,82 +1,81 @@
-<aside class="ml-[-100%] fixed z-10 top-0 pb-3 px-6 w-full flex flex-col justify-between h-screen bg-black/50 text-white transition duration-300 md:w-4/12 lg:ml-0 lg:w-[25%] xl:w-[20%] 2xl:w-[15%]">
+<aside class="ml-[-100%] fixed z-10 top-0 pb-3 px-6 w-full flex flex-col justify-between h-screen bg-gray-800 text-white transition duration-300 md:w-4/12 lg:ml-0 lg:w-[25%] xl:w-[20%] 2xl:w-[15%] shadow-lg">
   <div>
     <div class="-mx-6 px-6 py-4">
       <a title="home" routerLink="/dashboard">
-        <p class="font-black text-4xl text-center bg-clip-text text-transparent bg-gradient-to-r from-sky-800 via-teal-600 to-cyan-500 animate-text">
-        FIT.me
-        </p>
+        <div class="font-black text-4xl flex justify-center items-center bg-clip-text text-transparent bg-gradient-to-r from-green-800 via-green-600 to-green-300 animate-text">
+          <img src="./assets/logo.svg" alt="logo" class="w-12 h-12"> 
+          <p orbitron class="orbitron pl-2">CoreUp</p> 
+        </div>
       </a>
     </div>
-    <ul class="space-y-2 tracking-wide my-6">
+    <div class="flex flex-col justify-center items-center gap-4 mb-6">
+      <div class="img-wrapper rounded-full w-20 h-20 overflow-hidden relative">
+        <img class="w-full h-full object-cover" [src]="profileData.profilePicture" alt="Profile Picture" />
+      </div>
+      <div class="text-center">
+        <p class="font-bold text-lg">{{ profileData.name }} | {{ age }}</p>
+      </div>
+    </div>
+    <ul class="space-y-2">
       <li>
-        <a aria-label="dashboard" class="relative px-4 py-3 flex items-center space-x-4 rounded-lg text-white hover:bg-black/25" routerLink="/dashboard" routerLinkActive="bg-black/25">
-          <i class="fa-solid fa-chart-line" routerLinkActive="text-sky-800"></i>
+        <a aria-label="Dashboard" class="relative px-4 py-3 flex items-center space-x-4 rounded-lg text-white hover:bg-gray-700 transition duration-200" routerLink="/dashboard" routerLinkActive="bg-gray-700">
+          <i class="fa-solid fa-chart-line" routerLinkActive="text-green-600"></i>
           <span class="-mr-1 font-medium">Dashboard</span>
         </a>
       </li>
       <li>
-        <a aria-label="dashboard" class="relative px-4 py-3 flex items-center space-x-4 rounded-lg text-white hover:bg-black/25" routerLink="/body" routerLinkActive="bg-black/25">
-          <i class="fa-solid fa-person" routerLinkActive="text-sky-800"></i>
-          <span class="-mr-1 font-medium">Body Stats</span>
-        </a>
-      </li>
-      <li>
-        <a class="px-4 py-3 flex items-center space-x-4 rounded-md text-white group hover:bg-black/25" routerLink="/exercises" routerLinkActive="bg-black/25">
-          <i class="fa-solid fa-person-running" routerLinkActive="text-sky-800"></i>
+        <a aria-label="Exercises" class="relative px-4 py-3 flex items-center space-x-4 rounded-lg text-white hover:bg-gray-700 transition duration-200" routerLink="/exercises" routerLinkActive="bg-gray-700">
+          <i class="fa-solid fa-person-running" routerLinkActive="text-green-600"></i>
           <span class="">Exercises</span>
         </a>
       </li>
       <li>
-        <a class="px-4 py-3 flex items-center space-x-4 rounded-md text-white group hover:bg-black/25" routerLink="/workouts" routerLinkActive="bg-black/25">
-          <i class="fa-solid fa-dumbbell" routerLinkActive="text-sky-800"></i>
+        <a aria-label="Workouts" class="relative px-4 py-3 flex items-center space-x-4 rounded-lg text-white hover:bg-gray-700 transition duration-200" routerLink="/workouts" routerLinkActive="bg-gray-700">
+          <i class="fa-solid fa-dumbbell" routerLinkActive="text-green-600"></i>
           <span class="">Workouts</span>
         </a>
       </li>
       <li>
-        <a class="px-4 py-3 flex items-center space-x-4 rounded-md text-white group hover:bg-black/25" routerLink="/calendar" routerLinkActive="bg-black/25">
-          <i class="fa-regular fa-calendar" routerLinkActive="text-sky-800"></i>
+        <a aria-label="Calendar" class="relative px-4 py-3 flex items-center space-x-4 rounded-lg text-white hover:bg-gray-700 transition duration-200" routerLink="/calendar" routerLinkActive="bg-gray-700">
+          <i class="fa-regular fa-calendar" routerLinkActive="text-green-600"></i>
           <span class="">Calendar</span>
         </a>
       </li>
     </ul>
   </div>
-  <hr>
+  <hr class="border-white/20" />
   <div class="px-6 -mx-6 pt-4 flex flex-col items-start">
-    <button class="px-4 py-3 flex items-center space-x-4 rounded-md text-white group" routerLink="/profile">
-      <i class="fa-solid fa-user"></i>
-      <span class="">Profile Settings</span>
+    <button aria-label="Profile Settings" class="px-4 py-3 flex items-center space-x-4 rounded-md text-white group hover:bg-gray-700 transition duration-200" routerLink="/profile">
+      <i class="fa-solid fa-user" routerLinkActive="text-green-600"></i>
+      <span>Profile Settings</span>
     </button>
-    <button class="px-4 py-3 flex items-center space-x-4 rounded-md text-white group" (click)="logout()">
+    <button aria-label="Logout" class="px-4 py-3 flex items-center space-x-4 rounded-md text-white group hover:bg-gray-700 transition duration-200" (click)="logout()">
       <i class="fa-solid fa-arrow-right-from-bracket"></i>
-      <span class="">Logout</span>
+      <span>Logout</span>
     </button>
   </div>
 </aside>
-
-<nav class="fixed bottom-0 left-0 right-0 z-100 bg-black text-white flex justify-around py-3 shadow-lg md:hidden">
-  <a title="Dashboard" routerLink="/dashboard" routerLinkActive="text-sky-800" class="flex flex-col items-center">
+<nav class="fixed bottom-0 left-0 right-0 z-100 bg-gray-800 text-white flex justify-around py-3 shadow-lg md:hidden">
+  <a title="Dashboard" aria-label="Dashboard" routerLink="/dashboard" routerLinkActive="text-green-600" class="flex flex-col items-center">
     <i class="fa-solid fa-chart-line text-xl"></i>
   </a>
-  <a title="Body Stats" routerLink="/body" routerLinkActive="text-sky-800" class="flex flex-col items-center">
-    <i class="fa-solid fa-person text-xl"></i>
-  </a>
-  <a title="Exercises" routerLink="/exercises" routerLinkActive="text-sky-800" class="flex flex-col items-center">
+  <a title="Exercises" aria-label="Exercises" routerLink="/exercises" routerLinkActive="text-green-600" class="flex flex-col items-center">
     <i class="fa-solid fa-person-running text-xl"></i>
   </a>
-  <a title="Workouts" routerLink="/workouts" routerLinkActive="text-sky-800" class="flex flex-col items-center">
+  <a title="Workouts" aria-label="Workouts" routerLink="/workouts" routerLinkActive="text-green-600" class="flex flex-col items-center">
     <i class="fa-solid fa-dumbbell text-xl"></i>
   </a>
-  <a title="Calendar" routerLink="/calendar" routerLinkActive="text-sky-800" class="flex flex-col items-center">
+  <a title="Calendar" aria-label="Calendar" routerLink="/calendar" routerLinkActive="text-green-600" class="flex flex-col items-center">
     <i class="fa-regular fa-calendar text-xl"></i>
   </a>
-  <a title="Profile" (click)="toggleProfileMenu()" routerLinkActive="text-sky-800" class="flex flex-col items-center">
+  <a title="Profile" aria-label="Profile" (click)="toggleProfileMenu()" routerLinkActive="text-green-600" class="flex flex-col items-center">
     <i class="fa-solid fa-user text-xl"></i>
   </a>
-  <div *ngIf="isProfileMenuOpen" class="fixed bottom-16 right-5 bg-black text-white rounded-lg p-3 shadow-lg z-20">
-    <button class="w-full py-2 text-left" routerLink="/profile">
+  <div *ngIf="isProfileMenuOpen" class="fixed bottom-16 right-5 bg-gray-800 text-white rounded-lg p-3 shadow-lg z-20">
+    <button class="w-full py-2 text-left hover:bg-gray-700 transition duration-200" routerLink="/profile">
       <i class="fa-solid fa-user"></i> Profile Settings
     </button>
-    <button class="w-full py-2 text-left" (click)="logout()">
+    <button class="w-full py-2 text-left hover:bg-gray-700 transition duration-200" (click)="logout()">
       <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
     </button>
   </div>

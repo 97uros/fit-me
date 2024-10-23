@@ -1,118 +1,66 @@
 <div class="container mx-auto px-4 py-4 mb-10 lg:mb-0">
   <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mt-1 mb-2 md:mb-4">
-    <div class="user-info flex col-span-12 lg:col-span-2 justify-between items-center bg-black/50 text-white rounded-lg p-4 gap-4">
-      <div class="flex flex-col justify-center items-center gap-4"> <!-- Left Side -->
-        <div class="img-wrapper rounded-full w-20 h-20 overflow-hidden relative">
-          <img class="w-full h-full object-cover" 
-            [src]="profileData.profilePicture" 
-            alt="Profile Picture">
-        </div>
-        <div>
-          <p class="font-bold text-lg mb-4">{{ profileData.firstName }}, {{ age }}</p>
-        </div>
-      </div>
+    <!-- User Info Section -->
+    <div class="user-info relative flex col-span-12 lg:col-span-2 justify-between items-center bg-gray-800 hover:bg-gray-700 text-white rounded-xl shadow-lg p-4 gap-4">
       <div class="w-full flex flex-col justify-center items-start text-left">
-        <div *ngIf="currentAchievement" class="achievement w-full flex flex-row justify-between items-start md:items-end">
-          <div class="flex flex-col md:flex-row md:gap-4">
-            <p class="font-bold text-lg mb-2"><small class="font-normal text-lg text-gray-400">Points:</small> {{ profileData.points.toFixed(0) }}</p>
-            <p class="font-bold text-lg mb-2"><small class="font-normal text-lg text-gray-400">Level:</small> {{ currentAchievement.name }}</p>
-          </div>
-          <img *ngIf="currentAchievement" src="{{ currentAchievement.badgeUrl }}" 
-            alt="{{ currentAchievement.name }} badge" 
-            class="w-10 h-10 md:w-14 md:h-14" />
-        </div>
-        <div *ngIf="mostRecentWorkout">
-          <p class="font-bold text-lg mb-2"><small class="font-normal text-lg text-gray-400">Last activity:</small> {{ mostRecentWorkout.name }} ({{ getDaysAgo( mostRecentWorkout.completedAt.toDate()) }})</p>
-        </div>
-        <div class="goal-progress w-full">
-          <p class="text-lg mb-4 text-gray-400">Goal progress:</p>
-          <div class="bg-black/25 rounded-lg shadow-sm overflow-hidden p-1">
-            <div class="relative h-6 flex items-center justify-center">
-              <div class="absolute top-0 bottom-0 left-0 rounded-lg w-[75%] bg-sky-800"></div>
-              <div class="relative text-white font-medium text-sm">75%</div>
+        <div class="grid grid-cols-4 gap-4">
+          <div class="col-span-3">
+            <p class="font-bold text-xl mb-2 text-gray-100">
+              <small class="font-medium text-sm text-gray-400">Points:</small> {{ points.toFixed(0) }}
+            </p>
+            <div *ngIf="currentAchievement" class="flex justify-between align-center">
+              <p class="font-bold text-lg mb-2 text-gray-100">
+                <small class="font-medium text-sm text-gray-400">Level:</small> {{ currentAchievement.name }}
+              </p>
+            </div>
+            <div *ngIf="!currentAchievement">
+              <p class="text-gray-400">No achievements unlocked yet.</p>
             </div>
           </div>
         </div>
+        <!-- Most Recent Workout -->
+        <div *ngIf="mostRecentWorkout">
+          <p class="font-bold text-lg mb-2 capitalize text-gray-100">
+            <small class="font-medium text-sm text-gray-400">Last activity:</small> {{ mostRecentWorkout.name }} ({{ getDaysAgo(mostRecentWorkout.completedAt.toDate()) }})
+          </p>
+        </div>
       </div>
+      <!-- Achievement Badge -->
+      <img *ngIf="currentAchievement.badgeUrl"
+        [src]="currentAchievement.badgeUrl"
+        alt="{{ currentAchievement.name }} Badge"
+        class="w-10 h-10 md:w-14 md:h-14 absolute right-0 top-0 m-4 rounded-full shadow-md bg-gray-700 border border-gray-600" />
     </div>
-    <div class="col-span-6 lg:col-span-1 flex flex-col justify-center items-center bg-black/50 text-white rounded-lg p-4">
-      <i class="text-sky-800 fa-regular fa-clock text-3xl mb-2"></i>
+
+    <!-- Time Tracker -->
+    <div class="col-span-6 lg:col-span-1 flex flex-col justify-center items-center bg-gray-800 hover:bg-gray-700 text-white rounded-xl shadow-lg p-4">
+      <i class="text-green-600 fa-regular fa-clock text-3xl mb-2"></i>
       <div class="text-center">
-        <p class="font-bold text-lg md:text-xl lg:text-2xl mb-2">{{ totalTimeSpent }}</p>
+        <p class="font-bold text-xl md:text-2xl mb-1 text-gray-100">{{ totalTimeSpent }}</p>
         <p class="text-sm text-gray-400">Total Time</p>
       </div>
     </div>
-    <div class="col-span-6 lg:col-span-1 flex flex-col justify-center items-center bg-black/50 text-white rounded-lg p-4">
-      <i class="text-sky-800 fa-solid fa-dumbbell text-3xl mb-2"></i>
+
+    <!-- Workouts Done -->
+    <div class="col-span-6 lg:col-span-1 flex flex-col justify-center items-center bg-gray-800 hover:bg-gray-700 text-white rounded-xl shadow-lg p-4">
+      <i class="text-green-600 fa-solid fa-dumbbell text-3xl mb-2"></i>
       <div class="text-center">
-        <p class="font-bold text-lg md:text-xl lg:text-2xl mb-2">{{ numberOfWorkoutsDone }}</p>
+        <p class="font-bold text-xl md:text-2xl mb-1 text-gray-100">{{ numberOfWorkoutsDone }}</p>
         <p class="text-sm text-gray-400">Workouts done</p>
       </div>
     </div>
   </div>
 
-  <div class="trackers grid grid-cols-auto lg:grid-cols-3 gap-2 md:gap-4 mt-1 mb-2 md:mb-4">
-    <div class="weight col-span-2 lg:col-span-1 bg-black/50 text-white rounded-lg p-4 text-center">
-      <form class="flex flex-col justify-center items-center" (ngSubmit)="changeUserWeight()">
-        <label class="font-bold text-lg mb-2" for="weight">Current weight:</label>
-        <div class="flex items-center justify-center mt-2">
-          <button type="button" (click)="userWeight = (userWeight ? userWeight - 1 : 0)" class="bg-black/25 text-white px-4 py-2 rounded-lg hover:bg-black/50">-</button>
-          <input 
-            [placeholder]="profileData.weight" 
-            class="w-1/5 bg-transparent text-white text-4xl font-black focus:border-0 focus:outline-0 text-center" 
-            type="number" 
-            id="weight" 
-            [(ngModel)]="userWeight" 
-            name="weight"
-          >
-          <button type="button" (click)="userWeight = (userWeight ? userWeight + 1 : 1)" class="bg-black/25 text-white px-4 py-2 rounded-lg hover:bg-black/50">+</button>
-        </div>
-        <button type="submit" class="mt-4 bg-sky-800 hover:bg-sky-900 text-white px-4 py-2 rounded-lg">Update weight</button>
-        <div *ngIf="weightDifference" class="mt-4 text-sm text-gray-400">{{ weightDifference }}</div>
-      </form>
-    </div>
-    <div class="calories flex flex-col justify-center items-center bg-black/50 text-white rounded-lg p-4 text-center">
-      <i class="text-sky-800 fa-solid fa-fire text-3xl mb-2"></i>
-      <div class="text-center">
-        <p class="font-bold text-lg md:text-xl lg:text-2xl mb-2">{{ caloriesBurnedToday }}</p>
-        <p class="text-sm text-gray-400">Calories burned today</p>
-      </div>
-    </div>
-    <div class="steps flex flex-col justify-center items-center bg-black/50 text-white rounded-lg p-4 text-center">
-      <i class="text-sky-800 fa-solid fa-shoe-prints text-3xl mb-2"></i>
-      <div class="text-center">
-        <p class="font-bold text-lg md:text-xl lg:text-2xl mb-2">9.788</p>
-        <p class="text-sm text-gray-400">Steps today</p>
-      </div>
-    </div>
+  <!-- Trackers Section -->
+  <div class="trackers grid grid-cols-auto lg:grid-cols-3 gap-2 md:gap-4 mt-2 mb-4">
+    <app-weight-tracker [isMetric]="isMetric"></app-weight-tracker>
+    <app-steps-tracker [isMetric]="isMetric" [stepGoal]="stepGoal"></app-steps-tracker>
+    <app-calories-tracker [caloriesGoal]="caloriesGoal" [caloriesBurnedToday]="caloriesBurnedToday"></app-calories-tracker>
   </div>
 
-  <div class="charts grid grid-cols-1 lg:grid-cols-3 gap-2 md:gap-4">
-    <div class="p-4 bg-black/50 text-white rounded-lg lg:col-span-2">
-      <div class="chart-container">
-        <apx-chart
-        [series]="chartOptions.series"
-        [chart]="chartOptions.chart"
-        [xaxis]="chartOptions.xaxis"
-        [yaxis]="chartOptions.yaxis"
-        [title]="chartOptions.title"
-        [stroke]="chartOptions.stroke"
-        [tooltip]="chartOptions.tooltip"
-      ></apx-chart>
-      </div>
-    </div>
-    <div class="p-4 bg-black/50 text-white rounded-lg lg:col-span-1">
-      <div class="chart-container">
-        <apx-chart
-          [series]="pieChartOptions.series"
-          [chart]="pieChartOptions.chart"
-          [labels]="pieChartOptions.labels"
-          [responsive]="pieChartOptions.responsive"
-          [title]="pieChartOptions.title"
-          [legend]="pieChartOptions.legend"
-          [colors]="pieChartOptions.colors"
-        ></apx-chart>
-      </div>
-    </div>
+  <!-- Charts & Body Stats -->
+  <div class="stats grid grid-cols-auto lg:grid-cols-3 gap-2 md:gap-4 mt-2 mb-4">
+    <app-charts class="lg:col-span-2" [userId]="userId" (chartReady)="onChartReady()"></app-charts>
+    <app-body-stats></app-body-stats>
   </div>
 </div>

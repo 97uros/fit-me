@@ -1,0 +1,18 @@
+<div class="steps flex flex-col justify-center items-center bg-gray-800 text-white rounded-xl p-4 text-center shadow-lg hover:bg-gray-700 transition-all">
+  <div class="relative w-32 h-32">
+    <svg class="absolute inset-0 w-full h-full" viewBox="0 0 36 36">
+      <path class="text-gray-600" d="M18 2.0845a 15.9155 15.9155 0 1 1 0 31.831 15.9155 15.9155 0 1 1 0-31.831" fill="none" stroke-width="2" stroke="currentColor" />
+      <path class="text-green-600" [attr.stroke-dasharray]="stepProgress + ', 100'" d="M18 2.0845a 15.9155 15.9155 0 1 1 0 31.831 15.9155 15.9155 0 1 1 0-31.831" fill="none" stroke-width="2" stroke-linecap="round" stroke="currentColor" />
+    </svg>
+    <div class="absolute inset-0 flex items-center justify-center text-xl font-bold">
+      <div class="flex flex-col items-center">
+        <i class="text-green-600 fa-solid fa-shoe-prints text-3xl mb-2"></i>
+        <p>{{ stepProgress.toFixed(0) }}%</p>
+      </div>
+    </div>
+  </div>
+  <div class="text-center mt-4">
+    <p class="font-bold text-2xl md:text-3xl lg:text-4xl mb-2">{{ steps }}</p>
+    <p class="text-sm text-gray-400">Steps Today</p>
+  </div>
+</div>

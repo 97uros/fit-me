@@ -1,1 +1,97 @@
-<p>start-workout-modal works!</p>
+<div *ngIf="startingWorkout && currentExerciseIndex !== null" class="fixed inset-0 z-40 w-full h-full flex flex-col md:flex-row bg-gray-900 text-white">
+  <!-- Left Section: Exercise Image with Gradient Overlay -->
+  <div class="relative w-full md:w-1/2 flex-shrink-0">
+    <img [src]="'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/' + currentImage(startingWorkout.exercises[currentExerciseIndex])"
+      alt="{{ startingWorkout.exercises[currentExerciseIndex].name }}" 
+      class="w-full h-full object-cover grayscale">
+    <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black opacity-70"></div>
+  </div>
+
+  <!-- Right Section: Exercise Details and Controls -->
+  <div class="w-full md:w-1/2 flex flex-col justify-between p-8">
+    <!-- Workout Title -->
+    <h2 class="text-3xl font-bold text-center uppercase mb-4">{{ startingWorkout.name }}</h2>
+
+    <!-- Timer Display -->
+    <div class="text-center text-2xl mb-4">
+      {{ formatDuration() }}
+    </div>
+
+    <!-- Exercise Information -->
+    <div *ngIf="currentExerciseIndex !== null" class="mb-4">
+      <div class="flex flex-col items-center gap-2">
+        <h3 class="text-xl"><strong>{{ startingWorkout.exercises[currentExerciseIndex].name }}</strong></h3>
+        <p><strong>Set: </strong>{{ startingWorkout.exercises[currentExerciseIndex].currentSet }} of {{ startingWorkout.exercises[currentExerciseIndex].sets }}</p>
+        <p><strong>Reps: </strong>{{ startingWorkout.exercises[currentExerciseIndex].reps }}</p>
+      </div>
+    </div>
+
+    <!-- Complete Set Button -->
+    <div class="flex justify-center mb-4">
+      <button 
+        (click)="completeSet()" 
+        [disabled]="startingWorkout.exercises[currentExerciseIndex].done || isResting" 
+        class="w-full bg-gray-800 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-full">
+        {{ startingWorkout.exercises[currentExerciseIndex].done ? 'Exercise Completed' : 'Complete Set' }}
+      </button>
+    </div>
+
+    <!-- Workout Progress Bar -->
+    <div class="w-full mb-4">
+      <div class="bg-gray-800/50 rounded-full overflow-hidden p-1">
+        <div class="relative h-3 flex items-center justify-center">
+          <div class="absolute top-0 bottom-0 left-0 rounded-full bg-green-600" [ngStyle]="{'width': progress + '%'}"></div>
+          <div class="relative text-white font-medium text-xs">{{ progress.toFixed(0) }}% Completed</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rest Controls -->
+    <div class="flex gap-4 mb-4">
+      <button 
+        class="w-full bg-gray-700 text-white font-bold px-4 py-2 rounded-full disabled:opacity-50" 
+        disabled>
+        Rest ({{ restTimeRemaining }})
+        <i class="fa-solid fa-clock ml-2"></i>
+      </button>
+      <button 
+        (click)="skipRest()" 
+        [disabled]="!isResting" 
+        class="w-full bg-gray-700 text-white font-bold px-4 py-2 rounded-full disabled:opacity-50">
+        Skip Rest
+        <i class="fa-solid fa-forward ml-2"></i>
+      </button>
+      <button 
+        (click)="addRestTime()" 
+        [disabled]="!isResting" 
+        class="w-full bg-gray-700 text-white font-bold px-4 py-2 rounded-full disabled:opacity-50">
+        +10s
+        <i class="fa-solid fa-plus ml-2"></i>
+      </button>
+    </div>
+
+    <!-- Finish Workout Button -->
+    <div class="flex justify-center mb-4">
+      <button (click)="finishWorkout()" class="w-full bg-green-600 text-white font-bold px-4 py-2 rounded-full">
+        Finish Workout
+      </button>
+    </div>
+
+    <!-- Close Button -->
+    <button class="absolute top-4 right-4 text-white text-2xl" (click)="openConfirmCancelModal()">
+      <i class="fa-solid fa-x"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Confirmation Modal for Cancel Workout -->
+<div *ngIf="showConfirmCancelModal" class="fixed inset-0 z-50 flex items-center justify-center">
+  <div class="bg-gray-900 text-white rounded-xl shadow-lg p-8 m-8 md:m-0 relative max-w-md w-full z-50">
+    <h3 class="text-2xl mb-4 text-center">Are you sure you want to cancel this workout? All the progress will be lost.</h3>
+    <div class="flex justify-between gap-4">
+      <button (click)="cancelWorkout()" class="bg-red-600 text-white font-bold px-4 py-2 rounded-full w-full">Yes, Cancel</button>
+      <button (click)="closeConfirmCancelModal()" class="bg-gray-700 text-white font-bold px-4 py-2 rounded-full w-full">No, Continue</button>
+    </div>
+  </div>
+  <div class="fixed inset-0 bg-black opacity-50 z-40" (click)="closeConfirmCancelModal()"></div>
+</div>

@@ -1,0 +1,37 @@
+<div *ngIf="showWorkoutSelectionModal" class="fixed inset-0 z-50 flex items-center justify-center">
+  <div class="bg-gray-800 text-white rounded-xl shadow-lg p-8 relative z-50">
+    <button class="absolute top-4 right-4 text-white text-2xl hover:text-green-600 transition duration-200" (click)="closeWorkoutSelectionModal()">
+      <i class="fa-solid fa-x"></i>
+    </button>
+    <h2 class="text-2xl font-bold mb-4">Add {{ selectedExercise?.name }} to a Workout</h2>
+
+    <div class="flex flex-col gap-4">
+      <div>
+        <h3 class="font-semibold text-center">Select an existing workout:</h3>
+        <div class="flex flex-wrap gap-2">
+          <div *ngFor="let workout of workouts">
+            <button class="my-2 bg-gray-700 text-white font-bold capitalize px-4 py-2 rounded-full" (click)="addExerciseToWorkout(workout)">
+              {{ workout.name }}
+            </button>
+          </div>
+          <div *ngIf="!workouts">
+            No existing workouts!
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="font-semibold pb-2 text-center">Create a new workout:</h3>
+        <div class="flex items-center justify-between bg-gray-700 rounded-full p-2">
+          <input [(ngModel)]="newWorkoutName" type="text" placeholder="New workout name" class="pl-4 bg-gray-700 text-white border-0 focus:outline-none transition duration-200 rounded-full">
+          <button class="bg-green-600 text-white font-bold capitalize px-4 py-2 rounded-full" (click)="createAndAddWorkout()">
+            Create & Add
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay Background -->
+  <div class="fixed inset-0 bg-black opacity-50 z-40" (click)="closeWorkoutSelectionModal()"></div>
+</div>

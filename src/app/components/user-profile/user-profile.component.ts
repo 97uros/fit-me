@@ -6,6 +6,8 @@ import { Storage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserService } from '../../services/user.service';
+import { ToastrService } from 'ngx-toastr';
+import { GFitService } from '../../services/gfit.service';
 
 @Component({
   selector: 'app-user-profile',
@@ -17,187 +19,189 @@ import { UserService } from '../../services/user.service';
 export class UserProfileComponent implements OnInit {
   userId: string | null = null;
   profileData: any = {
-    firstName: '',
     dob: '',
-    height: null,
-    weight: null,
     gender: null,
     profilePicture: null 
   };
-  selectedFile: File | null = null;
-  isHovering = false;
+  points: number = 0;
+  achievements: any[] = [];
   errorMessage: string | null = null;
-  isEditing = false;
-  userWeight: number | null = null;
 
-  @ViewChild('fileInput') fileInput!: ElementRef;
+  height: any;
+  weight: any;
+
+  isMetric: boolean = true;
+  // Goals
+  stepGoal: number | null = null;
+  caloriesGoal: number | null = null;
+  weightGoal: number | null = null;
+  inputWeightGoal: number | null = null;
 
   constructor(
     private auth: Auth, 
     private firestore: Firestore, 
     private storage: Storage, 
     private userService: UserService,
-    private router: Router
-  ) {}
+    private router: Router,
+    private gfitService: GFitService,
+    private toastr: ToastrService
+  ) {
+    this.isMetric = this.userService.isMetric;
+  }
 
   ngOnInit(): void {
     this.userId = this.auth.currentUser ? this.auth.currentUser.uid : null;
     if (this.userId) {
       this.fetchProfileData();
+      this.fetchUserPoints();
+      this.fetchUserAchievements();
+      this.loadUserGoals();
+      this.userService.loadUnitPreference().then(() => {
+        this.isMetric = this.userService.isMetric;
+        this.updateInputWeightGoal();
+      });
     } else {
       this.router.navigate(['/login']);
     }
   }
 
   fetchProfileData() {
-    const profileDocRef = doc(this.firestore, `users/${this.userId}`);
-    getDoc(profileDocRef).then(docSnap => {
-      if (docSnap.exists()) {
-        this.profileData = docSnap.data();
-        this.userWeight = this.profileData.weight !== undefined ? this.profileData.weight : null; // Check if weight exists
-      } else {
-        this.errorMessage = 'No profile data found. You can create a new profile.';
-      }
-    }).catch(err => {
-      console.error('Error fetching profile data', err);
+    this.userService.getGoogleFitProfileData().subscribe({
+      next: (profileData) => {
+        if (profileData) {
+          this.profileData = profileData;
+          this.fetchWeightAndHeight();
+        } else {
+          this.errorMessage = 'No profile data found.';
+        }
+      },
+      error: (error) => this.errorMessage = 'Error fetching profile data'
+    });    
+  }
+
+  fetchWeightAndHeight() {
+    this.userService.getUserWeight().subscribe(weight => this.profileData.weight = weight);
+    this.userService.getUserHeight().subscribe(height => {
+      this.profileData.height = height;
+      this.updateInputWeightGoal();
+    });
+  }
+  
+  toggleUnits() {
+    this.isMetric = !this.isMetric;
+    this.userService.saveUnitPreference(this.isMetric);
+    this.updateInputWeightGoal();
+  }
+  
+  get displayHeight(): string {
+    if (!this.profileData.height) return 'N/A';
+    if (this.isMetric) {
+      return `${this.profileData.height} cm`;
+    } else {
+      const feet = Math.floor(this.profileData.height / 30.48);
+      const inches = Math.round((this.profileData.height / 2.54) % 12);
+      return `${feet}ft ${inches}in`;
+    }
+  }
+
+  get displayWeight(): string {
+    if (!this.profileData.weight) return 'N/A';
+    return this.isMetric
+      ? `${this.profileData.weight} kg`
+      : `${Math.round(this.profileData.weight * 2.20462)} lbs`;
+  }
+
+  get displayWeightGoal(): string {
+    if (!this.weightGoal) return 'N/A';
+    return this.isMetric
+      ? `${this.weightGoal} kg`
+      : `${Math.round(this.weightGoal * 2.20462)} lbs`;
+  }
+
+  updateInputWeightGoal() {
+    if (this.weightGoal !== null) {
+      this.inputWeightGoal = this.isMetric
+        ? this.weightGoal // Display in kg
+        : Math.round(this.weightGoal * 2.20462); // Display in lbs
+    } else {
+      this.inputWeightGoal = null;
+    }
+  }
+
+  fetchUserPoints() {
+    this.userService.getUserTotalPoints().then(points => {
+      this.points = points;
+    }).catch(error => {
+      console.error('Error fetching user points:', error);
+      this.toastr.error('Could not fetch user points.');
     });
   }
 
-  changeUserWeight() {
-    if (this.userWeight !== null) { // Check if userWeight is not null
-      this.userService.addBodyWeight(this.userWeight);
-    } else {
-      console.error('User weight is not set.');
-      // Handle the situation where userWeight is null
-    }
+  fetchUserAchievements() {
+    this.userService.getUserAchievements().then(achievements => {
+      this.achievements = achievements;
+    }).catch(error => {
+      console.error('Error fetching user achievements:', error);
+      this.toastr.error('Could not fetch user achievements.');
+    });
   }
 
-  async updateProfile() {
-    this.userWeight = this.profileData.weight; // Update userWeight based on the current profile data
-    await this.changeUserWeight(); // This will check if userWeight is not null before proceeding
-    const profileDocRef = doc(this.firestore, `users/${this.userId}`);
-    try {
-      await setDoc(profileDocRef, this.profileData, { merge: true });
-      console.log('Profile updated successfully');
-      await this.fetchProfileData(); // Refetch data after update
-      this.isEditing = false; 
-    } catch (err) {
-      this.errorMessage = 'Failed to update profile data. Please try again.';
-      console.error('Update error', err);
-    }
-}
-
-  editProfile() {
-    this.isEditing = true;
+  loadUserGoals() {
+    this.userService.getUserGoals().subscribe({
+      next: (goals: { stepGoal: number | null, caloriesGoal: number | null, weightGoal: number | null }) => {
+        this.stepGoal = goals?.stepGoal || null;
+        this.caloriesGoal = goals?.caloriesGoal || null;
+        this.weightGoal = goals?.weightGoal || null; // Load weight goal
+      },
+      error: (error: any) => {
+        console.error('Error loading goals:', error);
+      }
+    });
   }
+   
+  saveGoals() {
+    const stepGoal = this.stepGoal || 0;
+    const caloriesGoal = this.caloriesGoal || 0;
 
-   // Profile picture
-
-   onFileSelected(event: any) {
-    const file: File = event.target.files[0];
-    if (file && this.userId) {
-      const storageRef = ref(this.storage, `profile_pictures/${this.userId}`);
-      const uploadTask = uploadBytesResumable(storageRef, file);
-      // Listen for upload progress and completion
-      uploadTask.on(
-        'state_changed', 
-        snapshot => {
-          // Optional: Track upload progress if needed
-        },
-        error => {
-          console.error('Upload error:', error);
-          this.errorMessage = 'Failed to upload image.';
-        },
-        () => {
-          // Get the download URL after successful upload
-          getDownloadURL(uploadTask.snapshot.ref).then(downloadURL => {
-            this.profileData.profilePicture = downloadURL;
-            this.saveProfilePicture(downloadURL);  // Save the image URL to Firestore
-          });
-        }
-      );
+    let weightGoal: number | null = this.inputWeightGoal;
+    if (weightGoal !== null) {
+      weightGoal = this.isMetric ? weightGoal : Math.round(weightGoal / 2.20462);
     }
-  }
 
-  saveProfilePicture(downloadURL: string) {
-    const profileDocRef = doc(this.firestore, `users/${this.userId}`);
-    updateDoc(profileDocRef, { profilePicture: downloadURL })
+    this.userService.saveUserGoals({ stepGoal, caloriesGoal, weightGoal })
       .then(() => {
-        console.log('Profile picture updated successfully.');
+        this.toastr.success('Goals saved successfully!');
       })
-      .catch(err => {
-        console.error('Error updating profile picture:', err);
+      .catch((error) => {
+        this.toastr.error('Error saving goals');
+        console.error('Error saving goals:', error);
       });
   }
-
-  onChangePicture() {
-    this.fileInput.nativeElement.click();
-  }
-
-  removeProfilePicture() {
-    if (this.userId && this.profileData.profilePicture) {
-      const storageRef = ref(this.storage, `profile_pictures/${this.userId}`);
-
-      // Delete the image from Firebase Storage
-      deleteObject(storageRef).then(() => {
-        // Remove the profile picture URL from Firestore
-        const profileDocRef = doc(this.firestore, `users/${this.userId}`);
-        updateDoc(profileDocRef, { profilePicture: '' })
-          .then(() => {
-            this.profileData.profilePicture = ''; // Clear the local profile picture
-            console.log('Profile picture removed successfully.');
-          })
-          .catch(err => {
-            console.error('Error removing profile picture from Firestore:', err);
-            this.errorMessage = 'Failed to remove profile picture from Firestore.';
-          });
-      }).catch(err => {
-        console.error('Error deleting profile picture from Storage:', err);
-        this.errorMessage = 'Failed to remove profile picture from Storage.';
-      });
-    }
-  }
-
-
+  
   deleteAccount() {
     const user = this.auth.currentUser; 
     if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
       if (user) {
-        const email = user.email; 
-        const password = prompt('Please enter your password to confirm deletion:'); 
-        if (password && email) {
-          const credential = EmailAuthProvider.credential(email, password);
-          reauthenticateWithCredential(user, credential)
-            .then(() => {
-              return deleteUser(user);
-            })
-            .then(() => {
-              const userDocRef = doc(this.firestore, `users/${user.uid}`);
-              return deleteDoc(userDocRef);
-            })
-            .then(() => {
-              console.log('Account and user data deleted successfully');
-              this.router.navigate(['/login']); 
-            })
-            .catch(err => {
-              console.error('Error deleting account', err);
-              this.errorMessage = 'Failed to delete account. Please ensure your password is correct.';
-            });
-        } else {
-          this.errorMessage = 'Password is required to delete the account.';
-        }
+        deleteUser(user)
+          .then(() => {
+            const userDocRef = doc(this.firestore, `users/${user.uid}`);
+            return deleteDoc(userDocRef);
+          })
+          .then(() => {
+            this.toastr.success('Account and user data deleted successfully');
+            this.router.navigate(['/login']); 
+          })
+          .catch(err => {
+            console.error('Error deleting account', err);
+            this.toastr.error('Failed to delete account. Please try again later.');
+          });
       } else {
-        this.errorMessage = 'User not authenticated.';
+        this.toastr.warning('User not authenticated.');
       }
     }
-  }
+  }  
 
   get age(): number | null {
-    if (!this.profileData.dob) return null;
-    
-    const dob = new Date(this.profileData.dob);
-    const ageDiff = Date.now() - dob.getTime();
-    const ageDate = new Date(ageDiff); // miliseconds from epoch
-    return Math.abs(ageDate.getUTCFullYear() - 1970); // subtract 1970 to get age
+    return this.userService.calculateAge(this.profileData.dob);
   }
 }

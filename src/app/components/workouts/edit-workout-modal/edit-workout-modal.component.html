@@ -1,1 +1,91 @@
-<p>edit-workout-modal works!</p>
+ <!-- Edit Workout Modal -->
+ <div *ngIf="editingWorkout" class="fixed inset-0 z-40 flex items-center justify-center">
+  <div class="bg-gray-900 text-white p-8 relative w-full h-full overflow-y-scroll z-50">
+    <h2 class="text-2xl font-bold mb-4 capitalize">Edit Workout: {{ editingWorkout.name }}</h2>
+    <!-- List of Exercises with Move Up and Move Down buttons -->
+    <div class="flex flex-col gap-4">
+      <div *ngFor="let exercise of editingWorkout.exercises; let i = index" class="flex flex-col lg:flex-row justify-between items-center bg-gray-800 rounded-xl p-4 relative">
+        <div class="number absolute left-0 top-0 p-4 h-full rounded-s-xl text-center bg-gray-700 ">
+          <div class="font-bold text-3xl text-gray-400 pb-4 lg:pb-0">{{ i + 1 }}</div>
+          <div class="lg:hidden flex flex-col gap-2">
+            <div class="move-up p-1">
+              <button (click)="moveExerciseUp(i)" [disabled]="i === 0" class="bg-gray-800 disabled:opacity-50 text-white font-bold flex justify-center items-center px-4 py-2 rounded-full w-10 h-10">
+                <i class="fa-solid fa-arrow-up"></i>
+              </button>
+            </div>
+            <div class="move-down p-1">
+              <button (click)="moveExerciseDown(i)" [disabled]="i === editingWorkout.exercises.length - 1" class="bg-gray-800 disabled:opacity-50 text-white font-bold flex justify-center items-center px-4 py-2 rounded-full w-10 h-10">
+                <i class="fa-solid fa-arrow-down"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="name w-full mb-2">
+          <h3 class="text-xl text-start pl-20 pb-4 lg:pl-12 lg:pb-0 font-bold flex items-center">{{ exercise.name }}</h3>
+        </div>
+        <div class="flex flex-col lg:flex-row gap-2 items-center pl-20 lg:pl-0">
+          <div class="flex controls gap-2 items-center">
+            <div class="lg:flex flex-col lg:flex-row gap-2 hidden">
+              <div class="move-up">
+                <button (click)="moveExerciseUp(i)" [disabled]="i === 0" class="bg-gray-700 disabled:opacity-50 text-white font-bold flex justify-center items-center px-4 py-2 rounded-full w-10 h-10">
+                  <i class="fa-solid fa-arrow-up"></i>
+                </button>
+              </div>
+              <div class="move-down">
+                <button (click)="moveExerciseDown(i)" [disabled]="i === editingWorkout.exercises.length - 1" class="bg-gray-700 disabled:opacity-50 text-white font-bold flex justify-center items-center px-4 py-2 rounded-full w-10 h-10">
+                  <i class="fa-solid fa-arrow-down"></i>
+                </button>
+              </div>
+            </div>
+            <div class="flex flex-col lg:flex-row gap-2">
+              <div class="sets text-center flex flex-row bg-gray-700 rounded-full p-1 max-w-1/2 justify-between">
+                <button type="button" (click)="exercise.sets = (exercise.sets ? exercise.sets - 1 : 0)" class="bg-gray-800 text-white flex justify-center items-center px-4 py-2 rounded-full w-10 h-10">-</button>
+                <input 
+                  placeholder="Sets" 
+                  class="w-1/5 lg:w-10 bg-transparent text-white text-sm font-black focus:border-0 focus:outline-0 text-center" 
+                  type="number" 
+                  id="sets" 
+                  [(ngModel)]="exercise.sets" 
+                  name="sets"
+                >
+                <button type="button" (click)="exercise.sets = (exercise.sets ? exercise.sets + 1 : 1)" class="bg-gray-800 text-white flex justify-center items-center px-4 py-2 rounded-full w-10 h-10">+</button>
+              </div>
+              <div class="times hidden lg:flex lg:items-center">
+                <i class="fa-solid fa-x text-xs"></i>
+              </div>
+              <div class="reps text-center flex flex-row bg-gray-700 rounded-full p-1 max-w-1/2 justify-between">
+                <button type="button" (click)="exercise.reps = (exercise.reps ? exercise.reps - 1 : 0)" class="bg-gray-800 text-white flex justify-center items-center px-4 py-2 rounded-full w-10 h-10">-</button>
+                <input 
+                  placeholder="Reps" 
+                  class="w-1/5 lg:w-10 bg-transparent text-white text-sm font-black focus:border-0 focus:outline-0 text-center" 
+                  type="number" 
+                  id="reps" 
+                  [(ngModel)]="exercise.reps" 
+                  name="reps"
+                >
+                <button type="button" (click)="exercise.reps = (exercise.reps ? exercise.reps + 1 : 1)" class="bg-gray-800 text-white flex justify-center items-center px-4 py-2 rounded-full w-10 h-10">+</button>
+              </div>
+            </div>
+            <div class="delete">
+              <button (click)="removeExercise(i)" class="bg-gray-700 text-white flex justify-center items-center px-4 py-2 rounded-full w-10 h-10 border-2 border-red-600">
+                <i class="fa-solid fa-trash text-gray-400 hover:text-white"></i>
+              </button>
+            </div>
+          </div>       
+        </div>
+      </div>
+    </div>
+    
+    <!-- Save and Cancel Buttons -->
+    <div class="flex justify-end gap-4 mt-4">
+      <button (click)="saveWorkout()" class="bg-green-600 text-white font-bold px-4 py-2 rounded-full w-full">
+        Save Workout
+      </button>
+      <button (click)="cancelEdit()" class="bg-gray-700 text-white font-bold px-4 py-2 rounded-full w-full">
+        Cancel
+      </button>
+    </div>
+    <button class="absolute top-4 right-4 text-white text-2xl" (click)="cancelEdit()"><i class="fa-solid fa-x"></i></button>
+  </div>
+  <div class="fixed inset-0 bg-black opacity-50 z-40" (click)="cancelEdit()"></div>
+</div>
