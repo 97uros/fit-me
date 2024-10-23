@@ -1,17 +1,29 @@
-.ngx-pagination {
-  li {
-    color: white !important;
-    border-radius: 8px !important;
-    a {
-      border-radius: 8px !important;
-      color: white !important;
-      &:hover {
-        background: #047857;
-      }
-    }
-    
+.exercise-list-container {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+  position: relative;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+
+  /* Gradient overlay */
+  .gradient-overlay {
+    content: '';
+    position: sticky; /* Changed to sticky */
+    top: 0;           /* Keeps it at the top while scrolling */
+    left: 0;
+    width: 100%;
+    height: 50px; /* Adjust the height as per your preference */
+    background: linear-gradient(to bottom, rgba(17, 24, 39, 1), transparent);
+    z-index: 1; /* Ensure it's above the exercises */
+    pointer-events: none; /* Don't block interactions */
   }
-  .current {
-    background: #047857 !important;
+
+  &::-webkit-scrollbar {
+    display: none; /* Hide scrollbar */
+  }
+
+  & > * {
+    position: relative;
+    z-index: 0; /* Ensure exercises appear below the gradient */
   }
 }

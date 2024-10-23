@@ -1,0 +1,12 @@
+.login {
+  video {
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+    opacity: 0;
+    visibility: hidden; /* Start hidden */
+  }
+  
+  video.visible {
+    opacity: 1;
+    visibility: visible; /* Make visible when playing */
+  }
+}

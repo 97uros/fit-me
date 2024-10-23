@@ -4,30 +4,30 @@
       <ng-container *ngFor="let day of days">
         <div *ngIf="day && scheduledWorkouts[day.toDateString()]">
           <div 
-            class="w-full flex justify-between items-center bg-black/50 text-white rounded-lg p-4 capitalize" 
+            class="w-full flex justify-between items-center bg-gray-800 text-white rounded-xl p-4 capitalize" 
             *ngFor="let workout of scheduledWorkouts[day.toDateString()]"
             [ngClass]="{'bg-emerald-700': hoveredDate === day.toDateString()}">
             {{ workout.name }} <br> 
             {{ day.getDate() }}.{{ day.getMonth() }}.{{ day.getFullYear() }} at {{ workout.scheduledTime }}
             <div class="buttons flex gap-2 lg:gap-4">
-              <button (click)="startWorkout(workout)" class="my-2 bg-sky-800 text-white font-bold uppercase px-4 py-2 rounded-lg">
-                <i class="fa-solid fa-play"></i>
+              <button (click)="startWorkout(workout)" class="flex justify-center items-center my-2 bg-gray-700 border-2 border-green-600 text-white font-bold uppercase px-4 py-2 rounded-full h-10 w-10">
+                <i class="fa-solid fa-play text-gray-400 hover:text-white"></i>
               </button>
-              <button (click)="deleteWorkoutFromDate(day, workout.id)" class="my-2 bg-red-900 text-white font-bold uppercase px-4 py-2 rounded-lg">
-                <i class="fa-solid fa-trash"></i>
+              <button (click)="deleteWorkoutFromDate(day, workout.id)" class="flex justify-center items-center my-2 border-2 border-red-600 text-white font-bold uppercase px-4 py-2 rounded-full h-10 w-10">
+                <i class="fa-solid fa-trash text-gray-400 hover:text-white"></i>
               </button>
             </div>
           </div>
         </div>
       </ng-container>
     </div>
-    <div class="flex-1 w-full lg:w-2/3 h-1/2 lg:h-full rounded-lg shadow-lg bg-black/50 text-white p-4 font-semibold text-center">
+    <div class="flex-1 w-full lg:w-2/3 h-1/2 lg:h-full rounded-xl shadow-lg bg-gray-800 text-white p-4 font-semibold text-center">
       <div class="flex items-center justify-around p-6">
-        <button (click)="changeMonth(-1)" class="p-4 rounded-md bg-black/25 hover:bg-gray-600 text-white">
+        <button (click)="changeMonth(-1)" class="flex justify-center items-center p-4 rounded-full w-10 h-10 bg-gray-700 600 text-white">
           <i class="fa-solid fa-chevron-left"></i>
         </button>
         <div class="text-lg">{{ monthName }}, {{ year }}</div>
-        <button (click)="changeMonth(1)" class="p-4 rounded-md bg-black/25 hover:bg-gray-600 text-white">
+        <button (click)="changeMonth(1)" class="flex justify-center items-center p-4 rounded-full w-10 h-10 bg-gray-700 600 text-white">
           <i class="fa-solid fa-chevron-right"></i>
         </button>
       </div>
@@ -52,13 +52,16 @@
                 (mouseenter)="showFinishedWorkoutTooltip(day)"
                 (mouseleave)="hideFinishedWorkoutTooltip()">
                 <div class="relative bottom-11 lg:bottom-12">
-                <i class="fa fa-check-circle text-green-500"></i>
+                <i class="fa fa-check-circle text-green-600"></i>
               </div>
             </div>
 
              <!-- Missed Workout Indicator -->
             <div class="absolute" *ngIf="day && hasMissedWorkoutOnDate(day)">
-              <i class="fa fa-exclamation-circle text-red-500"></i>
+              <i class="fa fa-exclamation-circle text-red-600"></i>
+              <div class="relative bottom-11 lg:bottom-12">
+                <i class="fa fa-exclamation-circle text-red-600"></i>
+              </div>
             </div>
         
             <!-- Display pulsating circles for scheduled workouts -->
@@ -69,8 +72,8 @@
                   (mouseenter)="showScheduledWorkoutTooltip(workout)"
                   (mouseleave)="hideScheduledWorkoutTooltip()">
                   
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-amber-400"></span>
                 </span>
               </div>
             </div>
@@ -99,7 +102,7 @@
         </div>
         <input type="time" [(ngModel)]="selectedTime" class="w-full mt-4 p-2 rounded-md bg-gray-700 text-white">
         <div class="flex justify-end gap-4 mt-4">
-          <button (click)="addWorkoutToDate()" class="bg-sky-800 text-white font-bold px-4 py-2 rounded-lg">
+          <button (click)="addWorkoutToDate()" class="bg-green-600 text-white font-bold px-4 py-2 rounded-lg">
             Add Workout
           </button>
           <button (click)="cancelSelection()" class="bg-gray-400/50 text-white font-bold px-4 py-2 rounded-lg">

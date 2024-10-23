@@ -1,43 +1,40 @@
-<div class="flex flex-col items-center flex-1 h-full justify-center px-4 mt-4 sm:px-0">
-  <div class="flex rounded-lg shadow-lg w-full sm:w-3/4 lg:w-1/2  bg-gray-900 text-white sm:mx-0" style="height: 500px">
-    <div class="flex flex-col w-full md:w-1/2 p-4">
-      <div class="flex flex-col flex-1 justify-center mb-8">
-        <h1 class="text-4xl text-center font-thin">Welcome Back!</h1>
-        <div class="w-full mt-4">
-          <div *ngIf="errorMessage" class="text-red-500 mb-4">
-            {{ errorMessage }}
-          </div>
-          <form class="form-horizontal w-3/4 mx-auto" (ngSubmit)="login()">
-            <div class="flex flex-col mt-4">
-              <input class="flex-grow h-8 px-2 rounded-lg bg-gray-800 text-white" [(ngModel)]="email" name="email" placeholder="Email" required>
-            </div>
-            <div class="flex flex-col mt-4">
-              <input class="flex-grow h-8 px-2 rounded-lg bg-gray-800 text-white" [(ngModel)]="password" name="password" type="password" placeholder="Password" required>
-            </div>
-            <div class="flex items-center mt-4">
-              <input type="checkbox" name="remember" id="remember" class="mr-2"> <label for="remember" class="text-sm text-grey-dark">Remember Me</label>
-            </div>
-            <div class="flex flex-col mt-8">
-              <button type="submit" class="bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold py-2 px-4 rounded-lg">
-                Login
-              </button>
-            </div>
-          </form>
-          <div class="text-center m-4">
-            <a class="no-underline hover:underline text-blue-dark text-xs" href="#">
-              Forgot Your Password?
-            </a>
-          </div>
-          <hr>
-          <div class="text-center mt-4">
-            <p class="font-semibold">No account?</p> 
-            <a class="no-underline hover:underline text-blue-dark text-xs" routerLink="/register">
-              Register now!
-            </a>
-          </div>
-        </div>
-      </div>
+<div class="login flex flex-col items-center justify-center h-screen w-screen relative overflow-hidden">
+  <!-- Video Background -->
+  <div class="absolute inset-0 z-0">
+    <video autoplay muted playsinline class="absolute w-full h-full object-cover" id="video1">
+      <source src="./assets/videos/barbell.mp4" type="video/mp4">
+    </video>
+    <video muted playsinline class="absolute w-full h-full object-cover" id="video2">
+      <source src="./assets/videos/pushups.mp4" type="video/mp4">
+    </video>
+    <video muted playsinline class="absolute w-full h-full object-cover" id="video3">
+      <source src="./assets/videos/running.mp4" type="video/mp4">
+    </video>
+    <video muted playsinline class="absolute w-full h-full object-cover" id="video4">
+      <source src="./assets/videos/pullups.mp4" type="video/mp4">
+    </video>
+  </div>
+
+  <!-- Overlay -->
+  <div class="absolute inset-0 bg-black opacity-50 z-10"></div>
+
+ <!-- Login Card -->
+  <div class="relative z-20 flex flex-col rounded-xl shadow-lg w-full sm:w-3/4 lg:w-1/2 bg-gray-800 text-white p-6 space-y-8">
+    <div class="font-black text-4xl flex flex-col justify-center items-center bg-clip-text text-transparent bg-gradient-to-r from-green-800 via-green-600 to-green-300 animate-text">
+      <img src="./assets/logo.svg" alt="logo" class="w-12 h-12"> 
+      <p orbitron class="orbitron">CoreUp</p> 
     </div>
-    <div class="hidden md:block md:w-1/2 rounded-r-lg" style="background: url('https://images.pexels.com/photos/791763/pexels-photo-791763.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'); background-size: cover; background-position: center center;"></div>
+    <div class="text-center text-xl font-semibold italic">
+      "{{ currentQuote }}"
+    </div>
+    <h1 class="text-4xl text-center font-thin">Welcome Back!</h1>
+    <p class="text-center text-sm mb-4">Seamless integration with Google Fit!</p>
+    <button class="flex items-center justify-center bg-red-600 hover:bg-red-700 text-white text-sm font-semibold py-2 px-4 rounded-full mt-6" (click)="loginWithGoogle()">
+      <i class="fab fa-google mr-2"></i> Sign in with Google
+    </button>
+    <div class="text-center text-sm mt-4">
+      <a href="/about" class="text-gray-400 hover:underline">About Us</a> | 
+      <a href="/contact" class="text-gray-400 hover:underline">Contact</a>
+    </div>
   </div>
 </div>

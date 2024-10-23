@@ -1,96 +1,147 @@
 import { Injectable } from '@angular/core';
-import { Auth } from '@angular/fire/auth';
-import { Firestore, doc, getDoc, collection, addDoc } from '@angular/fire/firestore';
-import { getDocs, setDoc, updateDoc } from 'firebase/firestore';
-import { Observable, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
-import { format } from 'date-fns';
+import { Auth, GoogleAuthProvider, UserCredential } from '@angular/fire/auth';
+import { Firestore, doc, getDoc, collection, addDoc, setDoc, docData } from '@angular/fire/firestore';
+import { getDocs, updateDoc } from 'firebase/firestore';
+import { map, Observable, switchMap } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
+import { GFitService } from './gfit.service';
+
+interface UserGoals {
+  stepGoal: number | null;
+  caloriesGoal: number | null;
+  weightGoal: number | null;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserService {
-  constructor(private auth: Auth, private firestore: Firestore, private toastr: ToastrService) {}
 
-  getUserProfile(): Observable<any> {
-    const userId = this.auth.currentUser ? this.auth.currentUser.uid : null;
-    if (!userId) {
-      return of(null); // Return an observable with null if no user is logged in
+  userProfile: any = {}; 
+  isMetric: boolean = true;
+
+  constructor(
+    private auth: Auth, 
+    private firestore: Firestore, 
+    private gfitService: GFitService,
+    private toastr: ToastrService
+  ) {}
+
+  async createUserProfileIfNotExists(user: UserCredential): Promise<void> {
+    const userDocRef = doc(this.firestore, `users/${user.user.uid}`);
+    const userDocSnap = await getDoc(userDocRef);   
+    if (!userDocSnap.exists()) {
+      const profileData = await this.gfitService.getGoogleFitProfile().toPromise();
+      const userData = {
+        email: user.user.email,
+        name: user.user.displayName,
+        profilePicture: user.user.photoURL,
+        dob: profileData?.birthday || null,
+        gender: profileData?.gender || null,
+        points: 0,
+        achievements: [],
+        weight: profileData?.height,
+        height: profileData?.weight 
+      }; 
+      await setDoc(userDocRef, userData);
+      this.toastr.success('User profile created successfully');
     }
-    const profileDocRef = doc(this.firestore, `users/${userId}`);
+  }
+
+  getGoogleFitProfileData(): Observable<any> {
     return new Observable(observer => {
-      getDoc(profileDocRef).then(docSnap => {
-        if (docSnap.exists()) {
-          observer.next(docSnap.data());
-        } else {
-          observer.next(null);
-        }
-        observer.complete();
-      }).catch(error => {
-        observer.error(error);
+      this.gfitService.getGoogleFitProfile().subscribe({
+        next: (profileData) => {
+          if (profileData) {        
+            observer.next({
+              name: profileData.name,
+              gender: profileData.gender,
+              profilePicture: profileData.profilePicture,
+              dob: profileData.birthday
+            });
+          } else {
+            observer.next(null);
+          }
+          observer.complete();
+        },
+        error: (error) => observer.error(error)
       });
     });
   }
+  
+  calculateAge(dob: string | null): number | null {
+    if (!dob) return null;
+    const dateOfBirth = new Date(dob);
+    const ageDiff = Date.now() - dateOfBirth.getTime();
+    const ageDate = new Date(ageDiff);
+    return Math.abs(ageDate.getUTCFullYear() - 1970);
+  }
 
-  // New method to get user weight
   getUserWeight(): Observable<number | null> {
-    return new Observable(observer => {
-      this.getUserProfile().subscribe(userProfile => {
-        if (userProfile && userProfile.weight) {
-          observer.next(userProfile.weight);
-        } else {
-          observer.next(null); // Return null if weight is not available
-        }
-        observer.complete();
-      }, error => {
-        observer.error(error); // Pass error to the observer
-      });
-    });
+    return this.gfitService.getUserWeightFromGoogleFit().pipe(
+      map(weight => weight ? Math.round(weight) : null)
+    );
+  }
+  
+  getUserHeight() {
+    return this.gfitService.getUserHeightFromGoogleFit().pipe(
+      map(height => height !== null ? Math.round(height * 100) : null) // convert to cm
+    );
   }
 
-  // Weight tracker
+  // Unit Preference 
 
-  async getWeightHistory(userId: string): Promise<any[]> {
-    const weightRecordsRef = collection(this.firestore, `users/${userId}/bodyWeightRecords`);
-    const weightSnapshot = await getDocs(weightRecordsRef);
-    return weightSnapshot.docs.map(doc => doc.data());
-  }
-
-  async addBodyWeight(newWeight: number): Promise<void> {
-    const userId = this.auth.currentUser ? this.auth.currentUser.uid : null;
-    if (!userId) {
-      return Promise.reject('User not logged in'); // Handle case where user is not logged in
-    }
-    const userDocRef = doc(this.firestore, `users/${userId}`);
-    try {
-      // Get the existing user data to log the current weight
+  async loadUnitPreference() {
+    const userId = this.auth.currentUser?.uid;
+    if (userId) {
+      const userDocRef = doc(this.firestore, `users/${userId}`);
       const userDocSnap = await getDoc(userDocRef);
-      
       if (userDocSnap.exists()) {
-        const userProfile = userDocSnap.data();
-        const currentWeight = userProfile['weight']; // Accessing weight after checking existence
-        // Log the old weight in the bodyWeightRecords sub-collection
-        const record = {
-          date: new Date().toLocaleDateString(),
-          weight: currentWeight
-        };
-        const weightRecordsRef = collection(this.firestore, `users/${userId}/bodyWeightRecords`);
-        await addDoc(weightRecordsRef, record);
-        // Update the current weight
-        await updateDoc(userDocRef, { weight: newWeight });
-        console.log('User weight updated and old weight logged successfully');
+        const data = userDocSnap.data();
+        this.isMetric = data['unitPreference'] === 'metric';
       } else {
-        return Promise.reject('User document does not exist');
+        console.log('No unit preference found, defaulting to metric');
       }
-    } catch (error) {
-      console.error('Error updating weight:', error);
-      return Promise.reject(error); // Reject with the error
     }
-  }  
+  }
 
-  // Achievements and points
+  // Save the unit preference to Firestore
+  async saveUnitPreference(isMetric: boolean) {
+    const userId = this.auth.currentUser?.uid;
+    if (userId) {
+      const userDocRef = doc(this.firestore, `users/${userId}`);
+      await updateDoc(userDocRef, { unitPreference: isMetric ? 'metric' : 'imperial' });
+      this.isMetric = isMetric; // Update locally
+    }
+  }
 
+  // Goals
+  
+  getUserGoals() {
+    const userId = this.auth.currentUser?.uid;
+    const userDocRef = doc(this.firestore, `users/${userId}`);
+    return docData(userDocRef).pipe(
+      map(userData => {
+        const data = userData as UserGoals; // Type assertion
+        return {
+          stepGoal: data.stepGoal || null,
+          caloriesGoal: data.caloriesGoal || null,
+          weightGoal: data.weightGoal || null
+        };
+      })
+    );
+  }
+
+  saveUserGoals(goals: { stepGoal: number, caloriesGoal: number, weightGoal: any }) {
+    const userId = this.auth.currentUser?.uid;
+    const userDocRef = doc(this.firestore, `users/${userId}`);
+    return setDoc(userDocRef, { 
+      stepGoal: goals.stepGoal, 
+      caloriesGoal: goals.caloriesGoal, 
+      weightGoal: goals.weightGoal 
+    }, { merge: true });
+  }
+  
   async updateUserPoints(pointsEarned: number): Promise<number> {
     const user = this.auth.currentUser;
     if (user) {
@@ -118,31 +169,21 @@ export class UserService {
   async saveAchievement(achievementName: string): Promise<void> {
     const user = this.auth.currentUser;
     if (user) {
-      // Reference to the specific achievement document
       const achievementDocRef = doc(this.firestore, `users/${user.uid}/achievements/${achievementName}`);
-      
-      // Get the document to check if it already exists
       const achievementDocSnapshot = await getDoc(achievementDocRef);
-  
-      // Check if the document already exists
       if (achievementDocSnapshot.exists()) {
-        console.log('Achievement already unlocked:', achievementName);
-        return; // Exit the function if the achievement already exists
+        return;
       }
-  
-      // Save the achievement if it doesn't exist
       await setDoc(achievementDocRef, { unlocked: true, dateUnlocked: new Date() });
-      this.toastr.success(`Achievement unlocked:` , achievementName);
+      this.toastr.success(`Achievement unlocked:`, achievementName);
     }
   }
 
   async getUserAchievements(): Promise<any[]> {
     const user = this.auth.currentUser;
     if (user) {
-      // Get all documents from the achievements collection
       const achievementsCollectionRef = collection(this.firestore, `users/${user.uid}/achievements`);
       const achievementsSnapshot = await getDocs(achievementsCollectionRef);
-      // Map through all the achievement documents and return them
       return achievementsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     }
     return [];

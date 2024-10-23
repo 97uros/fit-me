@@ -1,0 +1,33 @@
+<div class="flex flex-wrap items-center justify-center gap-4 mt-2 mb-6">
+  <!-- Muscle Group Dropdown -->
+  <select [(ngModel)]="selectedMuscle" (change)="onFilterChange()" class="rounded-xl bg-gray-800 text-white p-4 w-full sm:w-auto transition duration-200 hover:bg-gray-700">
+    <option value="">All Muscles</option>
+    <option class="capitalize" *ngFor="let muscle of muscles" [value]="muscle">{{ muscle }}</option>
+  </select>
+
+  <!-- Equipment Dropdown -->
+  <select [(ngModel)]="selectedEquipment" (change)="onFilterChange()" class="rounded-xl bg-gray-800 text-white p-4 w-full sm:w-auto transition duration-200 hover:bg-gray-700">
+    <option value="">All Equipment</option>
+    <option class="capitalize" *ngFor="let equipment of equipments" [value]="equipment">{{ equipment }}</option>
+  </select>
+
+  <!-- Search Bar -->
+  <input [(ngModel)]="searchQuery" (input)="onFilterChange()" class="rounded-xl bg-gray-800 text-white p-4 w-full sm:w-auto transition duration-200 hover:bg-gray-700" placeholder="Search by name">
+
+  <!-- Category Buttons for Multiple Selection -->
+  <div class="categories">
+    <h3 class="font-bold pb-4 text-2xl text-white">Filter by categories</h3>
+    <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
+      <button *ngFor="let category of categories" 
+        class="flex justify-evenly items-center px-4 py-2 rounded-full font-bold uppercase text-xs transition duration-200"
+        [ngClass]="{ 'border-2 border-white bg-gray-700 !text-white': isCategorySelected(category), 'bg-gray-800 text-white hover:bg-gray-700': !isCategorySelected(category) }"
+        (click)="toggleCategory(category)">
+        {{ category }} <span *ngIf="isCategorySelected(category)"><i class="fa-solid fa-x text-white border-2 border-white p-1 rounded-full w-5 h-5 flex justify-center items-center"></i></span>
+      </button>
+      <button class="bg-transparent border-2 border-white text-white text-xs font-bold uppercase px-4 py-2 rounded-full transition duration-200 hover:bg-gray-700" 
+        (click)="clearCategoryFilter()">
+        Clear All Categories
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,122 +1,66 @@
 <div class="container mx-auto px-4 py-4">
+
   <!-- Filters -->
-  <div class="flex flex-wrap items-center justify-center gap-4 mt-2 mb-6">
-    <!-- Muscle Group Dropdown -->
-    <select [(ngModel)]="selectedMuscle" (change)="filterExercises()" class="rounded-lg bg-black/50 text-white p-4 w-full sm:w-auto">
-      <option value="">All Muscles</option>
-      <option class="capitalize" *ngFor="let muscle of muscles" [value]="muscle">{{ muscle }}</option>
-    </select>
-    
-    <!-- Equipment Dropdown -->
-    <select [(ngModel)]="selectedEquipment" (change)="filterExercises()" class="rounded-lg bg-black/50 text-white p-4 w-full sm:w-auto">
-      <option value="">All Equipment</option>
-      <option class="capitalize" *ngFor="let equipment of equipments" [value]="equipment">{{ equipment }}</option>
-    </select>
+  <app-exercise-filter
+    [muscles]="muscles"
+    [equipments]="equipments"
+    [categories]="categories"
+    [exercises]="exercises"
+    (filteredExercises)="updateFilteredExercises($event)"> 
+  </app-exercise-filter>
 
-    <!-- Search Bar -->
-    <input [(ngModel)]="searchQuery" (input)="filterExercises()" class="rounded-lg bg-black/50 text-white p-4 w-full sm:w-auto" placeholder="Search by name">
-
-    <!-- Category Buttons for Multiple Selection -->
-    <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 mt-4">
-      <button *ngFor="let category of categories" 
-        class="px-4 py-2 rounded-lg font-bold uppercase text-xs text-white"
-        [ngClass]="{ 'bg-black/50 text-sky-800': isCategorySelected(category), 'bg-black/50 text-white': !isCategorySelected(category) }"
-        (click)="toggleCategory(category)">
-        {{ category }} <span><i *ngIf="isCategorySelected(category)" class="fa-solid fa-x"></i></span>
-      </button>
-      <button class="bg-transparent border-2 border-white text-white text-xs font-bold uppercase px-4 py-2 rounded-lg" 
-        (click)="clearCategoryFilter()">
-        Clear All Categories
-      </button>
-    </div>
-  </div>
-
+  <!-- Loading -->
   <div *ngIf="loading" class="p-6 flex justify-center items-center">
-    <i class="fa-solid fa-spinner fa-spin-pulse text-white text-8xl"></i>
+    <i class="fa-solid fa-circle-notch fa-spin text-green-600 text-8xl"></i>
   </div>
 
-  <!-- Exercise Cards -->
-  <div *ngIf="!loading" class="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    <div *ngFor="let exercise of filteredExercises | paginate: { itemsPerPage: 12, currentPage: page }" class="bg-black/50 rounded-lg shadow-lg lg:max-h-96"
-      (mouseenter)="startImageSwitch(exercise)"
-      (mouseleave)="stopImageSwitch(exercise)">
-      <div class="relative h-1/2">
-         <img [src]="'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/' + currentImage(exercise)"
-          alt="{{ exercise.name }}" 
-          class="w-full h-full object-cover transition-opacity duration-1000 ease-in-out rounded-t-lg grayscale"> 
-        <div class="absolute inset-0 bg-gradient-to-t from-sky-800 to-transparent opacity-50"></div>
-        <button class="absolute bottom-2 right-2" (click)="openWorkoutSelection(exercise)">
-          <i class="fa-solid fa-circle-plus text-white text-3xl"></i>        
-        </button>
-      </div>
-      <div class="p-4">
-        <h3 class="text-lg text-white font-bold mb-2">{{ exercise.name }}</h3>
-        <p class="text-sm text-white mb-2 capitalize"><strong>Category:</strong> {{ exercise.category }}</p>
-        <p class="text-sm text-white mb-2 capitalize"><strong>Primary Muscles:</strong> {{ exercise.primaryMuscles.join(', ') }}</p>
-        <button class="my-2 bg-sky-800 text-white font-bold uppercase px-4 py-2 rounded-lg" (click)="viewExercise(exercise)">View Exercise</button>
+   <!-- Exercise List with Scrollable Container -->
+  <div class="exercise-list-container h-screen overflow-y-auto" (scroll)="onScroll($event)">
+    <div class="gradient-overlay"></div>
+    <div *ngIf="!loading" class="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div *ngFor="let exercise of displayedExercises" class="bg-gray-800 rounded-xl shadow-lg transition-transform transform hover:bg-gray-700 lg:max-h-96"
+        (mouseenter)="startImageSwitch(exercise)"
+        (mouseleave)="stopImageSwitch(exercise)">
+        <div class="relative h-1/2">
+          <img [src]="'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/' + currentImage(exercise)"
+            alt="{{ exercise.name }}" 
+            class="w-full h-full object-cover transition-opacity duration-1000 ease-in-out rounded-t-xl grayscale"> 
+          <div class="absolute inset-0 bg-gradient-to-t from-sky-800 to-transparent opacity-50"></div>
+          <button class="absolute bottom-2 right-2 p-2" (click)="openWorkoutSelection(exercise)">
+            <i class="fa-solid fa-circle-plus text-white text-3xl"></i>        
+          </button>
+        </div>
+        <div class="p-4">
+          <h3 class="text-lg text-white font-bold mb-2">{{ exercise.name }}</h3>
+          <p class="text-sm text-gray-300 mb-2 capitalize"><strong>Category:</strong> {{ exercise.category }}</p>
+          <p class="text-sm text-gray-300 mb-2 capitalize"><strong>Primary Muscles:</strong> {{ exercise.primaryMuscles.join(', ') }}</p>
+          <button class="my-2 bg-green-600 text-white font-bold px-4 py-2 rounded-full transition duration-200 hover:bg-green-600" (click)="viewExercise(exercise)">View Exercise</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Pagination -->
-  <div class="flex justify-center items-center my-6 text-white">
-    <pagination-controls (pageChange)="page = $event"></pagination-controls>
+    <!-- Loading More -->
+    <div *ngIf="loadingMore" class="p-6 flex justify-center items-center">
+      <i class="fa-solid fa-circle-notch fa-spin text-green-600 text-4xl"></i>
+      <p class="ml-4 text-gray-300">Loading more exercises...</p>
+    </div>
   </div>
 
   <!-- Details Modal -->
-  <div *ngIf="showModal" class="fixed inset-0 z-50 flex items-center justify-center">
-    <!-- Modal Content -->
-    <div class="bg-black/90 text-white rounded-lg shadow-lg p-8 relative max-w-4xl w-full z-50" (click)="$event.stopPropagation()">
-      <button (click)="closeModal()" class="absolute top-4 right-4 text-white text-2xl"><i class="fa-solid fa-x"></i></button>
-      <h2 class="text-2xl font-bold mb-4">{{ selectedExercise.name }}</h2>
-      <p class="font-semibold mb-4">{{ selectedExercise.instructions}}</p>
-      <div class="grid grid-cols-2">
-        <div class="text">
-          <p class="capitalize"><strong>Category:</strong> {{ selectedExercise.category }}</p>
-          <p class="capitalize"><strong>Force:</strong> {{ selectedExercise.force }}</p>
-          <p class="capitalize"><strong>Level:</strong> {{ selectedExercise.level }}</p>
-          <p class="capitalize"><strong>Mechanic:</strong> {{ selectedExercise.mechanic }}</p>
-          <p class="capitalize"><strong>Equipment:</strong> {{ selectedExercise.equipment }}</p>
-          <p class="capitalize"><strong>Primary Muscles:</strong> {{ selectedExercise.primaryMuscles }}</p>
-          <p class="capitalize"><strong>Secondary Muscles:</strong> {{ selectedExercise.secondaryMuscles }}</p>
-        </div>
-        <div class="img">
-          <video autoplay muted loop>
-            <source src="{{ selectedExercise.videoUrl }}" type="video/mp4">
-          </video> 
-        </div>
-      </div>
-    </div>
-    <!-- Overlay Background -->
-    <div class="fixed inset-0 bg-black opacity-50 z-40" (click)="closeModal()"></div>
-  </div>
+  <app-exercise-details 
+    [selectedExercise]="selectedExercise"
+    [showModal]="showModal" 
+    (close)="closeDetailsModal()"
+    *ngIf="showModal">
+  </app-exercise-details>
+
   <!-- Workout Modal -->
-  <div *ngIf="showWorkoutSelectionModal" class="fixed inset-0 z-50 flex items-center justify-center">
-    <div class="bg-black/90 text-white rounded-lg shadow-lg p-8 relative max-w-4xl w-full z-50">
-      <h2 class="text-2xl font-bold mb-4">Add {{ selectedExercise.name }} to a Workout</h2>
-      <!-- List of existing workouts -->
-      <div class="flex flex-col gap-2">
-        <h3>Select an existing workout:</h3>
-        <div class="flex flex-row gap-2">
-          <div *ngFor="let workout of workouts">
-            <button class="my-2 bg-black/25 text-white font-bold uppercase px-4 py-2 rounded-lg" (click)="addExerciseToWorkout(workout)">
-              {{ workout.name }}
-            </button>
-          </div>
-        </div>
-      </div>
-  
-      <!-- Option to create a new workout -->
-      <div class="my-4">
-        <h3>Create a new workout:</h3>
-        <input [(ngModel)]="newWorkoutName" type="text" placeholder="New workout name" class="px-4 py-2 rounded-lg text-gray-700" />
-        <button class="my-2 ml-4 bg-sky-700 text-white font-bold uppercase px-4 py-2 rounded-lg" (click)="createAndAddWorkout()">
-          Create & Add
-        </button>
-      </div>
-  
-      <button class="absolute top-4 right-4 text-white text-2xl" (click)="closeWorkoutSelectionModal()"><i class="fa-solid fa-x"></i></button>
-    </div>
-    <div class="fixed inset-0 bg-black opacity-50 z-40" (click)="closeWorkoutSelectionModal()"></div>
-  </div>
+  <app-exercise-add 
+    [showWorkoutSelectionModal]="showWorkoutSelectionModal" 
+    [selectedExercise]="selectedExercise"
+    [userId]="userId"
+    (close)="closeWorkoutSelectionModal()"
+    *ngIf="showWorkoutSelectionModal">
+  </app-exercise-add>
+
 </div>

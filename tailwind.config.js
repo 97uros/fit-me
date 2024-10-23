@@ -7,6 +7,7 @@ module.exports = {
     extend: {
       fontFamily: {
         grotesk: ['"Space Grotesk"', 'sans-serif'],
+        orbitron: ['"Orbitron"', 'sans-serif']
       },
       zIndex: {
         '100': '100',

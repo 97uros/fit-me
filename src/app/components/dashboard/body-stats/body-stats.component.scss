@@ -1,0 +1,48 @@
+.body {
+  &-figure {
+    svg {
+      g {
+        cursor: pointer; /* Ensure muscles are clickable */
+      }
+    }
+
+    .highlighted {
+      fill: #ef4444 !important; /* Red for worked muscles */
+      &:hover {
+        fill: #fca5a5 !important;
+      }
+    }
+
+    .healed {
+      fill: #16a34a !important; /* Green for healed muscles */
+      &:hover {
+        fill: #86efac !important;
+      }
+    }
+
+    .healing {
+      fill: #fbbf24 !important; /* Orange for healing muscles */
+      &:hover {
+        fill: #fde68a !important;
+      }
+    }
+  }
+  &-tooltip {
+    background-color: rgba(31, 41, 55, 0.8) !important;
+    color: white !important;
+    border-radius: 4px;
+    padding: 10px;
+    border: 1px solid white;
+    box-shadow: 2px 2px 6px -4px #999;
+    cursor: default;
+    font-size: 14px;
+    left: 62px;
+    top: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    white-space: nowrap;
+    z-index: 12;
+    transition: .15s ease all;
+  }
+}
