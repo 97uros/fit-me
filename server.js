@@ -6,7 +6,9 @@ const request = require('request');
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:4200', 'https://fit-me-a409a.web.app']
+}));
 app.use(bodyParser.json());
 
 app.post('/api/google-fit', (req, res) => {
