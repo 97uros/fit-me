@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  googleFitApiUrl: 'fit-me-a409a.web.app/api/google-fit',
+  googleFitApiUrl: 'https://fit-me-a409a.web.app/api/google-fit',
   firebaseConfig: {
     apiKey: "AIzaSyAWsDWF2x7AF7wmkqBHALn3h2IiFG1gm4E",
     authDomain: "fit-me-a409a.firebaseapp.com",
