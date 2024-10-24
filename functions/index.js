@@ -1,3 +1,4 @@
+const functions = require('firebase-functions'); // Include Firebase functions for deployment
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -5,6 +6,11 @@ const request = require('request');
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+// Set the Google Fit API URL based on the environment
+const googleFitApiUrl = process.env.NODE_ENV === 'production'
+  ? 'https://www.googleapis.com/fitness/v1' // Point directly to Google Fit API for production
+  : 'http://localhost:3000/api/google-fit'; // Local server URL for development
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -16,11 +22,8 @@ app.post('/api/google-fit', (req, res) => {
     return res.status(400).json({ error: 'Invalid request: Missing accessToken, path, or body' });
   }
 
-  // Use the Google Fit API URL from the environment variables
-  const googleFitApiUrl = 'https://www.googleapis.com/fitness/v1'; // Since it doesn't change, set it directly
-
   const options = {
-    url: `${googleFitApiUrl}/${path}`, // Using the static Google Fit API URL
+    url: `${googleFitApiUrl}/${path}`, // Use the environment-specific URL
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -37,7 +40,7 @@ app.post('/api/google-fit', (req, res) => {
 
     if (response && response.statusCode === 200) {
       try {
-        const data = JSON.parse(responseBody);
+        const data = JSON.parse(responseBody); // Safely parse the response
         res.json(data);
       } catch (parseError) {
         console.error('Error parsing response body:', parseError);
@@ -46,16 +49,15 @@ app.post('/api/google-fit', (req, res) => {
     } else {
       console.error('Google Fit API error:', {
         statusCode: response?.statusCode,
-        responseBody: responseBody
+        responseBody: responseBody,
       });
       res.status(response?.statusCode || 500).json({
         error: 'Error fetching data from Google Fit',
-        details: responseBody
+        details: responseBody,
       });
     }
   });
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
-});
+// Export as Firebase Functions
+exports.api = functions.https.onRequest(app);

@@ -9,7 +9,7 @@ import { environment } from '../../environments/environment';
   providedIn: 'root'
 })
 export class GFitService {
-  private fitApiUrl = environment.googleFitApiUrl;; 
+  private fitApiUrl = environment.googleFitApiUrl; 
   private peopleApiUrl = 'https://people.googleapis.com/v1/people/me?personFields=names,photos,birthdays,genders';
 
   constructor(
