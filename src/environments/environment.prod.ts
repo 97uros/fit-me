@@ -1,6 +1,6 @@
 export const environment = {
-  production: false,
-  googleFitApiUrl: 'http://localhost:3000/api/google-fit',
+  production: true,
+  googleFitApiUrl: 'https://www.googleapis.com/fitness/v1',
   firebaseConfig: {
     apiKey: "AIzaSyAWsDWF2x7AF7wmkqBHALn3h2IiFG1gm4E",
     authDomain: "fit-me-a409a.firebaseapp.com",
@@ -9,4 +9,4 @@ export const environment = {
     messagingSenderId: "86701435614",
     appId: "1:86701435614:web:1655cfa2d93dca0ef4f04f"
   },
-}
+};
