@@ -3,12 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, from, map, of, switchMap, tap } from 'rxjs'; 
 import { Auth } from '@angular/fire/auth';
 import { doc, getDoc, Firestore } from '@angular/fire/firestore';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class GFitService {
-  private fitApiUrl = 'http://localhost:3000/api/google-fit'; 
+  private fitApiUrl = environment.googleFitApiUrl;; 
   private peopleApiUrl = 'https://people.googleapis.com/v1/people/me?personFields=names,photos,birthdays,genders';
 
   constructor(
