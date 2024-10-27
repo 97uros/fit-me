@@ -2,13 +2,15 @@ import { AfterViewInit, Component } from '@angular/core';
 import { Auth, signInWithPopup, GoogleAuthProvider } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
-import { doc, setDoc, Firestore } from '@angular/fire/firestore';
+import { Database, ref, set } from '@angular/fire/database'; // Import Database, ref, and set
 import { CommonModule } from '@angular/common';
+import { update } from 'firebase/database';
+import { UserService } from '../../services/user.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ CommonModule ],
+  imports: [CommonModule],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
@@ -26,8 +28,9 @@ export class LoginComponent implements AfterViewInit {
   constructor(
     private auth: Auth, 
     private router: Router,
+    private userService: UserService,
     private toastr: ToastrService,
-    private firestore: Firestore
+    private db: Database
   ) {}
 
   ngOnInit() {
@@ -46,26 +49,26 @@ export class LoginComponent implements AfterViewInit {
 
   playVideo(index: number) {
     const video = this.videos[index];
-  
+
     // Hide all videos
     this.videos.forEach(v => {
       v.classList.remove('visible'); // Remove visible class
       v.style.opacity = '0'; // Set opacity to 0
       v.style.visibility = 'hidden'; // Set visibility to hidden
     });
-  
+
     // Show the current video
     video.style.visibility = 'visible'; // Make visible first
     video.classList.add('visible'); // Add class to trigger fade in
     setTimeout(() => {
       video.style.opacity = '1'; // Set opacity to 1 after a slight delay
     }, 10); // Small timeout to allow visibility to take effect
-  
+
     // Play the video
     video.play().catch(error => {
       console.error('Error playing video:', error);
     });
-  
+
     // Add event listener for when the video ends
     video.onended = () => {
       this.currentVideoIndex = (this.currentVideoIndex + 1) % this.videos.length; // Move to the next video
@@ -89,8 +92,11 @@ export class LoginComponent implements AfterViewInit {
       if (accessToken) {
         const userId = this.auth.currentUser?.uid;
         if (userId) {
-          const userDocRef = doc(this.firestore, `users/${userId}`);
-          await setDoc(userDocRef, { googleFitAccessToken: accessToken }, { merge: true });
+          // Create or update user profile
+          await this.userService.createUserProfileIfNotExists(result);
+          // Use Realtime Database to save the access token
+          const userRef = ref(this.db, `users/${userId}`);
+          await update(userRef, { googleFitAccessToken: accessToken });
           this.router.navigate(['/dashboard']);
         }
       } else {

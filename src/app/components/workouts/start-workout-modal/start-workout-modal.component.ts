@@ -17,7 +17,10 @@ import { Exercise } from '../../../services/exercise.service';
   styleUrls: ['./start-workout-modal.component.scss']
 })
 export class StartWorkoutModalComponent {
-  @Input() userWeight: number | null = null;
+  @Input() profileData: any = {
+    weight: null,
+  };
+  @Input() userWeight = this.profileData.weight;
   @Input() startingWorkout: any = null;
   @Input() currentExerciseIndex: number | null = null;
   @Input() progress: number = 0;
@@ -118,10 +121,10 @@ export class StartWorkoutModalComponent {
 
   finishWorkout(): void {
     if (!this.startingWorkout) return;
-
+  
     const totalCalories = this.startingWorkout.exercises.reduce((sum: number, exercise: any) => sum + this.calculateCalories(exercise, this.elapsedSeconds), 0);
     this.startingWorkout.totalCalories = totalCalories;
-
+  
     const pointsEarned = calculatePoints(this.startingWorkout);
     this.userService.updateUserPoints(pointsEarned).then(newTotalPoints => {
       const achievement = getAchievement(newTotalPoints);
@@ -134,10 +137,18 @@ export class StartWorkoutModalComponent {
       console.error('Error updating points:', error);
       this.toastr.error('Failed to update points');
     });
-
+  
     const user = this.auth.currentUser;
     if (user) {
-      this.workoutService.completeWorkout(user.uid, null, this.startingWorkout, this.elapsedSeconds, totalCalories)
+      // Pass exercises directly to avoid nesting issues
+      this.workoutService.completeWorkout(
+        user.uid,
+        this.startingWorkout.name,
+        this.startingWorkout.id,
+        this.startingWorkout.exercises, // Pass exercises only
+        this.elapsedSeconds,
+        totalCalories
+      )
         .then(() => {
           this.toastr.success('Workout completed! Great job!');
           this.toastr.info(`You burned approximately ${totalCalories.toFixed(0)} calories!`);
@@ -147,10 +158,10 @@ export class StartWorkoutModalComponent {
           this.toastr.error('Failed to save finished workout');
         });
     }
-
+  
     this.startingWorkout.completed = true;
     this.resetWorkout(); // Reset after finishing workout
-  }
+  }  
 
   startRestBetweenSets(exercise: any): void {
     this.isResting = true;

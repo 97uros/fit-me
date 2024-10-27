@@ -37,7 +37,7 @@ export class StepsTrackerComponent implements OnInit {
     if (this.stepGoal && this.steps) {
       this.stepProgress = Math.min((this.steps / this.stepGoal) * 100, 100);
     } else {
-      this.stepProgress = 0; // Reset to 0 if no goal is set
+      this.stepProgress = 0;
     }
   }
 }

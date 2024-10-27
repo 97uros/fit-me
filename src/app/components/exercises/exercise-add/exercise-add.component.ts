@@ -61,6 +61,7 @@ export class ExerciseAddComponent {
     workout.exercises.push(exerciseToAdd);
     try {
       await this.workoutService.updateWorkout(this.userId!, workout.id, {
+        name: workout.name, // Include the name here
         exercises: workout.exercises 
       });
   

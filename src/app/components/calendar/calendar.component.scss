@@ -1,0 +1,230 @@
+.fc {
+  --fc-bg-color: #1f2937; /* Matches bg-gray-800 */
+  --fc-border-color: #374151; /* Matches border-gray-600 */
+  --fc-text-color: #ffffff; /* Matches text-white */
+  --fc-hover-bg-color: #374151; /* Matches hover:bg-gray-700 */
+  --fc-font-bold: 700; /* Matches font-bold */
+  --fc-font-size-lg: 1.125rem; /* Matches text-2xl */
+  --fc-font-size-md: 1rem; /* Matches text-sm */
+  --fc-font-color-muted: #9ca3af; /* Matches text-gray-400 */
+  background-color: var(--fc-bg-color);
+  border: none !important;
+  border-radius: 0.5rem;
+  padding: 2.5rem;
+  @media (max-width: 640px) { // For small screens
+    padding: 1rem; // Reduce padding
+  }
+  td, tr, th {
+    border: none !important;
+    @media ( max-width: 768px ) {
+      tr {
+        height: 2rem !important;
+      }
+    }
+  }
+  &-toolbar {
+    padding: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    @media (max-width: 768px) {
+      align-items: center; // Stretch items to full width
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      &-chunk {
+        &:last-child {
+          display: none;
+        }
+      }
+    }
+    &-title {
+      font-size: var(--fc-font-size-lg);
+      font-weight: var(--fc-font-bold);
+      color: var(--fc-text-color);
+      @media (max-width: 768px) {
+        font-size: medium !important;
+      }
+    }
+  }
+  &-view-harness {
+    height: 100vh !important;
+  }
+  &-button {
+    background-color: var(--fc-bg-color);
+    border: 2px #9ca3af solid !important;
+    color: #9ca3af;
+    padding: 0.5rem 1rem;
+    margin: 0 0.25rem;
+    font-size: var(--fc-font-size-md);
+    text-transform: capitalize !important;
+    &:hover, &-active  {
+      background-color: var(--fc-hover-bg-color) !important;
+      color: white;
+    }
+  }
+  &-prev-button, &-next-button {
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    margin: 0.25rem !important;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50% !important;
+  }
+  &-today-button {
+    border-radius: 2.5rem !important;
+    height: 2.5rem !important;
+  }
+  &-dayGridMonth-button {
+    height: 2.5rem;
+    border-start-start-radius: 2.5rem !important;
+    border-end-start-radius: 2.5rem !important;
+  }
+  &-dayGridDay-button {
+    height: 2.5rem;
+    border-start-end-radius: 2.5rem !important;
+    border-end-end-radius: 2.5rem !important;
+  }
+  &-scroller {
+    overflow: visible !important;
+  }
+  &-col-header {
+    width: 100%;
+  }
+  &-scrollgrid {
+    background-color: transparent;
+    border-radius: 0.5rem;
+    border: none !important;
+    @media (max-width: 768px) {
+      &-sync-table {
+        width: 100%;
+      }
+    }
+  }
+  /* Event Styles */
+  &-event {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    padding: 0.5rem;
+    color: white;
+    border: none;
+    text-transform: capitalize;
+    border-radius: 0.5rem;
+    text-align: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Matches shadow-lg */
+    transition: scale 0.3s ease;
+    @media (max-width: 768px) {
+      display: inline-block; /* Change to inline-block to make the event a dot */
+      width: 0.75rem; /* Set width for the dot */
+      height: 0.75rem; /* Set height for the dot */
+      border-radius: 50%; /* Make the event a circle */
+      margin: 0.125rem; /* Adjust margin for spacing */
+      color: transparent; /* Hide text */
+      text-align: center;
+      transition: transform 0.3s ease;
+      &-title {
+        display: none !important; /* Hide title */
+      }
+      &-scheduled {
+        background-color: #fbbf24 !important; /* Yellow for scheduled */
+      }
+      &-completed {
+        background-color: #16a34a !important; /* Green for completed */
+      }
+      &-missed {
+        background-color: #ef4444 !important; /* Red for missed */
+      }
+      &:hover {
+        transform: scale(1.2); /* Scale up on hover for better visibility */
+      }
+    }
+    &-scheduled {
+      background-color: #fbbf24 !important;
+      &::after {
+        content: '\f017';
+        font-family: 'Font Awesome 6 Free';
+      }
+      &:hover {
+        scale: 1.1;
+      }
+    }
+    &-completed {
+      background-color: #16a34a !important;
+      &::after {
+        content: '\f058';
+        font-family: 'Font Awesome 6 Free';
+      }
+      &:hover {
+        scale: none;
+      }
+    }
+    &-missed {
+      background-color: #ef4444 !important;
+      &::after {
+        content: '\f057';
+        font-family: 'Font Awesome 6 Free';
+      }
+      &:hover {
+        scale: none;
+      }
+    }
+  }
+  &-tooltip {
+    background-color: rgba(31, 41, 55, 0.8) !important;
+    color: white !important;
+    border-radius: 4px;
+    padding: 1rem;
+    border: 1px solid white;
+    box-shadow: 2px 2px 6px -4px #999;
+    cursor: default;
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    align-items: start;
+    text-align: start;
+    transition: .15s ease all;
+  }
+  /* Day Cell Styles */
+  &-day {
+    cursor: pointer;
+    background-color: transparent;
+    border: none !important;
+    color: var(--fc-text-color);
+    text-align: center;
+    padding: 1rem !important;
+    border-radius: 0.5rem;
+    aspect-ratio: 1/1 !important;
+    @media (max-width: 640px) { 
+      width: 2rem !important;
+      height: 2rem !important;
+      padding: 0.5rem !important;
+    }
+    &-number {
+      font-size: var(--fc-font-size-md);
+      font-weight: var(--fc-font-bold);
+      color: var(--fc-text-color);
+    }
+    &-today {
+      background-color: #374151 !important;
+    }
+    &-sun {
+      color: #ef4444 !important;
+    }
+    &-past {
+      opacity: 0.5;
+      cursor: default;
+    }
+  } 
+}
+
+
+
+
+
+
+
+
+

@@ -66,24 +66,30 @@ export class UserProfileComponent implements OnInit {
   }
 
   fetchProfileData() {
-    this.userService.getGoogleFitProfileData().subscribe({
-      next: (profileData) => {
-        if (profileData) {
-          this.profileData = profileData;
-          this.fetchWeightAndHeight();
-        } else {
-          this.errorMessage = 'No profile data found.';
-        }
-      },
-      error: (error) => this.errorMessage = 'Error fetching profile data'
-    });    
+    this.userService.getGoogleFitProfileData().then(profileData => {
+      if (profileData) {
+        this.profileData = profileData;
+        this.fetchWeightAndHeight();
+      } else {
+        this.errorMessage = 'No profile data found.';
+      }
+    }).catch(error => {
+      this.errorMessage = 'Error fetching profile data';
+      console.error('Error fetching profile data:', error);
+    });
   }
 
   fetchWeightAndHeight() {
-    this.userService.getUserWeight().subscribe(weight => this.profileData.weight = weight);
-    this.userService.getUserHeight().subscribe(height => {
+    Promise.all([
+      this.userService.getUserWeight(),
+      this.userService.getUserHeight()
+    ]).then(([weight, height]) => {
+      this.profileData.weight = weight;
       this.profileData.height = height;
       this.updateInputWeightGoal();
+    }).catch(error => {
+      console.error('Error fetching weight and height:', error);
+      this.toastr.error('Could not fetch weight and height.');
     });
   }
   
@@ -146,16 +152,14 @@ export class UserProfileComponent implements OnInit {
     });
   }
 
+  
   loadUserGoals() {
-    this.userService.getUserGoals().subscribe({
-      next: (goals: { stepGoal: number | null, caloriesGoal: number | null, weightGoal: number | null }) => {
-        this.stepGoal = goals?.stepGoal || null;
-        this.caloriesGoal = goals?.caloriesGoal || null;
-        this.weightGoal = goals?.weightGoal || null; // Load weight goal
-      },
-      error: (error: any) => {
-        console.error('Error loading goals:', error);
-      }
+    this.userService.getUserGoals().then(goals => {
+      this.stepGoal = goals?.stepGoal || null;
+      this.caloriesGoal = goals?.caloriesGoal || null;
+      this.weightGoal = goals?.weightGoal || null; // Load weight goal
+    }).catch(error => {
+      console.error('Error loading goals:', error);
     });
   }
    

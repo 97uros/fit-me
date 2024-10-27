@@ -7,6 +7,7 @@ export const environment = {
     projectId: "fit-me-a409a",
     storageBucket: "fit-me-a409a.appspot.com",
     messagingSenderId: "86701435614",
-    appId: "1:86701435614:web:1655cfa2d93dca0ef4f04f"
+    appId: "1:86701435614:web:1655cfa2d93dca0ef4f04f",
+    databaseURL: "https://fit-me-a409a-default-rtdb.europe-west1.firebasedatabase.app"
   },
 };

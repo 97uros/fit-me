@@ -1,13 +1,16 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { format } from 'date-fns';
-import { Firestore, collection, addDoc, getDocs, deleteDoc } from '@angular/fire/firestore';
+import { Component, OnInit, viewChild, TemplateRef, ViewChild } from '@angular/core';
 import { Auth } from '@angular/fire/auth';
 import { WorkoutService } from '../../services/workout.service';
 import { ToastrService } from 'ngx-toastr';
-import { doc, updateDoc } from 'firebase/firestore';
 import { Router } from '@angular/router';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import { FullCalendarModule } from '@fullcalendar/angular';
+import tippy from 'tippy.js';
+
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { getDatabase, ref, set, get, remove, push } from 'firebase/database';
 
 interface Exercise {
   name: string;
@@ -15,8 +18,9 @@ interface Exercise {
   reps: number;
   done: boolean;
 }
+
 interface Workout {
-  id: string; 
+  id: string;
   name: string;
   exercises: Exercise[];
   scheduledTime?: string;
@@ -27,39 +31,64 @@ interface Workout {
 @Component({
   selector: 'app-calendar',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FullCalendarModule],
   templateUrl: './calendar.component.html',
   styleUrls: ['./calendar.component.scss']
 })
 export class CalendarComponent implements OnInit {
+
+  @ViewChild('tooltipTemplate', { static: true })
+  tooltipTemplate!: TemplateRef<any>;
+
   currentDate = new Date();
-  days: (Date | null)[] = [];
-  monthName: string = '';
-  year: number = 0;
-  scheduledWorkouts: { [dateString: string]: Workout[] } = {};
-  finishedWorkouts: any[] = [];
   workouts: Workout[] = [];
+  scheduledWorkouts: { [dateString: string]: Workout[] } = {};
+  finishedWorkouts: Workout[] = [];
   selectedDate: Date | null = null;
-  hoveredDate: string | null = null;
   selectedWorkout: Workout | null = null;
   selectedTime: string = '';
 
-  hoveredFinishedWorkout: any = null;
-  hoveredFinishedWorkoutTime: Date | null = null;
-  hoveredScheduledWorkout: any = null;
+  calendarOptions: {
+    plugins: any[];
+    initialView: string;
+    headerToolbar: {
+      left: string;
+      center: string;
+      right: string;
+    };
+    editable: boolean;
+    dateClick: (arg: any) => void;
+    eventClick: (arg: any) => void;
+    events: (info: { start: Date; end: Date; }) => Promise<any[]>;
+    eventDidMount: (arg: any) => void;
+    firstDay: number
+  };
 
   constructor(
-    private firestore: Firestore, 
-    private auth: Auth, 
+    private auth: Auth,
     private workoutService: WorkoutService,
     private router: Router,
     private toastr: ToastrService,
-  ) {}
+  ) {
+    this.calendarOptions = {
+      plugins: [dayGridPlugin, interactionPlugin],
+      initialView: 'dayGridMonth',
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,dayGridWeek,dayGridDay'
+      },
+      editable: true,
+      dateClick: this.handleDateClick.bind(this),
+      eventClick: this.handleEventClick.bind(this),
+      events: this.loadScheduledWorkouts.bind(this),
+      eventDidMount: this.handleEventDidMount.bind(this),
+      firstDay: 1
+    };
+  }
 
   ngOnInit() {
-    this.updateCalendar();
     this.loadWorkouts();
-    this.loadScheduledWorkouts();
     this.loadFinishedWorkouts();
   }
 
@@ -70,199 +99,211 @@ export class CalendarComponent implements OnInit {
     }
   }
 
-  async loadScheduledWorkouts() {
+  async loadScheduledWorkouts(info: any) {
     const user = this.auth.currentUser;
     if (user) {
-      const scheduledWorkouts: { [dateString: string]: Workout[] } = {};
+      const scheduledWorkouts: any[] = [];
+      const db = getDatabase();
+      const workoutsRef = ref(db, `users/${user.uid}/workoutInstances`);
       try {
-        const workoutInstances = await this.workoutService.getScheduledWorkouts(user.uid);
-        workoutInstances.forEach(async instance => {
-          let scheduledDate: Date;     
-          if (instance.scheduledDate && typeof instance.scheduledDate.toDate === 'function') {
-            scheduledDate = instance.scheduledDate.toDate();
-          } else if (typeof instance.scheduledDate === 'string') {
-            scheduledDate = new Date(instance.scheduledDate);
-          } else {
-            console.warn('Invalid scheduledDate format:', instance.scheduledDate);
-            return;
+        const snapshot = await get(workoutsRef);
+        if (snapshot.exists()) {
+          const workoutInstances = snapshot.val();
+          this.scheduledWorkouts = {}; // Reset the scheduledWorkouts before loading
+          for (const key in workoutInstances) {
+            const instance = workoutInstances[key];
+            let workoutDate: Date;
+            // Ensure we're processing the date correctly
+            if (instance.status === 'completed' && instance.completedAt) {
+              workoutDate = new Date(instance.completedAt);
+            } else if (instance.scheduledDate && typeof instance.scheduledDate === 'string') {
+              // Parse as UTC
+              workoutDate = new Date(instance.scheduledDate + 'T00:00:00Z'); // Add Z to ensure it's treated as UTC
+            } else {
+              console.warn('Invalid date format for workout instance:', instance);
+              continue;
+            }
+            // Normalize the date to UTC midnight
+            workoutDate.setUTCHours(0, 0, 0, 0);
+            const dateString = workoutDate.toISOString().split('T')[0]; // Format to YYYY-MM-DD
+            // Initialize the date entry if it doesn't exist
+            if (!this.scheduledWorkouts[dateString]) {
+              this.scheduledWorkouts[dateString] = [];
+            }
+            // Prepare event data for FullCalendar
+            const event = {
+              title: this.getEventTitle(instance),
+              date: dateString, // Use the formatted date
+              extendedProps: {
+                id: key,
+                scheduledTime: instance.scheduledTime,
+                status: instance.status,
+              },
+              className: this.getEventClass(instance.status),
+            };
+             scheduledWorkouts.push(event);
+            this.scheduledWorkouts[dateString].push(instance); // Store the instance
           }
-          
-          const dateString = scheduledDate.toDateString();
-          if (!scheduledWorkouts[dateString]) {
-            scheduledWorkouts[dateString] = [];
-          }
-
-          // Check if the workout is missed
-          if (this.isPastDay(scheduledDate)) {
-            // If missed, mark it as missed and update Firestore
-            instance.status = 'missed';
-            await this.markWorkoutAsMissed(instance);
-          } else {
-            // Only keep future scheduled workouts
-            scheduledWorkouts[dateString].push(instance);
-          }
-        });
-        this.scheduledWorkouts = scheduledWorkouts;
+        }
+        return scheduledWorkouts; // Return events for FullCalendar
       } catch (error) {
         this.toastr.error('Error loading scheduled workouts: ' + (error as any).message);
       }
     }
+    return []; // Return empty if user is not logged in
+  }
+
+
+  getEventTitle(instance: Workout) {
+    return `${instance.name}`;
+  }
+
+  getEventClass(status: string) {
+    if (status === 'completed') {
+      return 'fc-event-completed';
+    } else if (status === 'missed') {
+      return 'fc-event-missed';
+    }
+    return 'fc-event-scheduled';
   }
 
   async markWorkoutAsMissed(workout: Workout) {
     const user = this.auth.currentUser;
     if (user) {
-      const workoutRef = doc(this.firestore, `users/${user.uid}/workoutInstances/${workout.id}`);
-      await updateDoc(workoutRef, { status: 'missed' });
+      const db = getDatabase();
+      const workoutRef = ref(db, `users/${user.uid}/workoutInstances/${workout.id}`);
+      await set(workoutRef, { ...workout, status: 'missed' });
     }
   }
 
   async loadFinishedWorkouts(): Promise<void> {
     const user = this.auth.currentUser;
     if (user) {
-      this.finishedWorkouts = await this.workoutService.getFinishedWorkouts(user.uid);
+      const db = getDatabase();
+      const finishedWorkoutsRef = ref(db, `users/${user.uid}/workoutInstances`);
+      try {
+        const snapshot = await get(finishedWorkoutsRef);
+        if (snapshot.exists()) {
+          const workoutInstances = snapshot.val();
+          this.finishedWorkouts = [];
+          for (const key in workoutInstances) {
+            const instance = workoutInstances[key];
+            if (instance.status === 'completed') {
+              this.finishedWorkouts.push({
+                id: key,
+                name: instance.workoutName,
+                scheduledDate: new Date(instance.completedAt).toISOString().split('T')[0], // Use completedAt for the date
+                scheduledTime: instance.scheduledTime,
+                exercises: instance.exercises,
+                status: 'completed', // Keep track of the status
+              });
+            }
+          }
+        }
+      } catch (error) {
+        this.toastr.error('Error loading finished workouts: ' + (error as any).message);
+      }
     }
   }
 
-  showFinishedWorkoutTooltip(day: Date): void {
-    this.hoveredFinishedWorkout = this.finishedWorkouts.find(workout => {
-      const completedDate = workout.completedAt?.toDate();
-      return completedDate && this.isSameDate(completedDate, day);
-    });
-    if (this.hoveredFinishedWorkout) {
-      this.hoveredFinishedWorkoutTime = this.hoveredFinishedWorkout.completedAt?.toDate();
+  handleDateClick(arg: any) {
+    // Disable interaction with past dates
+    if (this.isPastDay(arg.date)) {
+      return; // Do nothing for past dates
     }
-  }
-
-  hideFinishedWorkoutTooltip(): void {
-    this.hoveredFinishedWorkout = null;
-    this.hoveredFinishedWorkoutTime = null;
-  }
-
-  showScheduledWorkoutTooltip(workout: any): void {
-    this.hoveredScheduledWorkout = workout;
-  }
-
-  hideScheduledWorkoutTooltip(): void {
-    this.hoveredScheduledWorkout = null;
-  }
-
-  hasFinishedWorkoutOnDate(day: Date): boolean {
-    return this.finishedWorkouts.some(workout => {
-      const completedDate = workout.completedAt?.toDate();
-      return completedDate && this.isSameDate(completedDate, day);
-    });
-  }
-
-  hasMissedWorkoutOnDate(day: Date): boolean {
-    const scheduledWorkouts = this.scheduledWorkouts[day.toDateString()];
-    if (!scheduledWorkouts || !this.isPastDay(day)) {
-      return false;
+    // Get the date string in YYYY-MM-DD format
+    const dateString = arg.date.toISOString().split('T')[0];
+    const existingWorkouts = this.scheduledWorkouts[dateString] || [];    
+    // Debugging output
+    if (existingWorkouts.length > 0) {
+      this.toastr.warning('A workout is already scheduled for this date. Please choose another date.');
+      return; // Do nothing and prevent opening the modal
     }
-    return scheduledWorkouts.some(workout => workout.status === 'missed');
+    // Proceed to open the modal for scheduling a workout
+    this.selectedDate = arg.date; // Get the clicked date
+    this.selectedWorkout = null; // Reset selected workout
+    this.selectedTime = ''; // Reset selected time
   }
 
-  isSameDate(date1: Date, date2: Date): boolean {
-    return (
-      date1.getFullYear() === date2.getFullYear() &&
-      date1.getMonth() === date2.getMonth() &&
-      date1.getDate() === date2.getDate()
-    );
+
+  handleEventClick(arg: any) {
+    // Do nothing for calendar events; we don't want to open a modal when clicking an event   
+    return;
   }
 
-  updateCalendar() {
-    const firstDayOfMonth = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), 1);
-    const lastDayOfMonth = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() + 1, 0);
-    const daysInMonth = lastDayOfMonth.getDate();
-    this.monthName = format(firstDayOfMonth, 'MMMM');
-    this.year = firstDayOfMonth.getFullYear();
-    this.days = Array.from({ length: 42 }, (_, i) => {
-      const day = i - firstDayOfMonth.getDay() + 1;
-      return day > 0 && day <= daysInMonth ? new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), day) : null;
-    });
-  }
-
-  changeMonth(direction: number) {
-    const newDate = new Date(this.currentDate);
-    newDate.setMonth(newDate.getMonth() + direction);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (newDate < today && direction < 0) {
-      return;
+  handleEventDidMount(arg: any) {
+    const workoutId = arg.event.extendedProps.id;
+    const eventDate = new Date(arg.event.start);
+    if (this.isPastDay(eventDate)) {
+      return; // Do not initialize the tooltip for past events
     }
-    this.currentDate.setMonth(this.currentDate.getMonth() + direction);
-    this.updateCalendar();
-  }
-
-  isToday(day: Date | null): boolean {
-    return day ? day.getDate() === new Date().getDate() &&
-      day.getMonth() === new Date().getMonth() &&
-      day.getFullYear() === new Date().getFullYear() : false;
-  }
-
-  isPastDay(day: Date | null): boolean {
-    if (!day) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return day.getTime() < today.getTime();
-  }
-
-  getDayClasses(day: Date | null): string {
-    if (!day) return 'rounded-full p-2';
-    return [
-      'rounded-full p-2',
-      this.isToday(day) ? 'bg-green-600 text-white font-bold uppercase hover:bg-green-700' : '',
-      this.isPastDay(day) ? 'bg-transparent text-gray-400 disabled:cursor-not-allowed disabled:opacity-50' : ''
-    ].join(' ');
-  }
-
-  selectDate(day: Date | null) {
-    if (day) {
-      this.selectedDate = day;
-    }
+    
+    // Create tooltip content
+    const tooltipContent = this.tooltipTemplate.createEmbeddedView({ workoutId });
+    
+    // Initialize tippy.js tooltip and store the single instance
+    const instance = tippy(arg.el, {
+      content: tooltipContent.rootNodes[0],
+      allowHTML: true,
+      interactive: true,
+      arrow: true,
+      trigger: 'mouseenter',
+    })
   }
 
   async addWorkoutToDate() {
     if (this.selectedDate && this.selectedWorkout) {
-      const dateString = this.selectedDate.toDateString();
-      const workoutWithTime = { 
-        ...this.selectedWorkout, 
-        scheduledTime: this.selectedTime, 
+      const dateToSchedule = new Date(this.selectedDate);
+      dateToSchedule.setHours(0, 0, 0, 0); // Set to the start of the day in local time
+
+      // Get the date string in YYYY-MM-DD format
+      const dateString = dateToSchedule.toLocaleDateString('en-CA'); // 'en-CA' returns YYYY-MM-DD format
+      const user = this.auth.currentUser;
+
+      // Check if a workout is already scheduled for the selected date
+      const existingWorkouts = await this.loadScheduledWorkouts({ start: dateToSchedule, end: dateToSchedule });
+      const isDateOccupied = existingWorkouts.some(event => event.date === dateString);
+      if (isDateOccupied) {
+        this.toastr.warning('A workout is already scheduled for this date. Please choose another date.');
+        return; // Exit the function to prevent adding a duplicate workout
+      }
+
+      const workoutWithTime = {
+        ...this.selectedWorkout,
+        scheduledTime: this.selectedTime,
         scheduledDate: dateString,
         status: 'scheduled' as 'scheduled'
-      }; 
-      const user = this.auth.currentUser;
+      };
+
       if (user) {
-        const workoutRef = collection(this.firestore, `users/${user.uid}/workoutInstances`);
-        await addDoc(workoutRef, workoutWithTime);
+        try {
+          const db = getDatabase();
+          // Generate a new unique instance ID using push()
+          const workoutRef = push(ref(db, `users/${user.uid}/workoutInstances`));
+          await set(workoutRef, { ...workoutWithTime, id: workoutRef.key }); // Include only 'id' from the generated key
+          this.selectedWorkout = null;
+          this.cancelSelection();
+          this.calendarOptions.events = this.loadScheduledWorkouts.bind(this);
+        } catch (error) {
+          console.error('Error adding workout: ', error);
+          this.toastr.error('Failed to add workout: ' + (error as any).message);
+        }
+      } else {
+        this.toastr.error('User not authenticated.');
       }
-      if (!this.scheduledWorkouts[dateString]) {
-        this.scheduledWorkouts[dateString] = [];
-      }
-      this.scheduledWorkouts[dateString].push(workoutWithTime);
-      this.selectedWorkout = null;
-      this.cancelSelection();
+    } else {
+        this.toastr.warning('Please select a date and workout before adding.');
     }
   }
 
-  async deleteWorkoutFromDate(date: Date, workoutId: string) {
-    const dateString = date.toDateString();
-    if (this.scheduledWorkouts[dateString]) {
-      const workoutToDelete = this.scheduledWorkouts[dateString].find(workout => workout.id === workoutId);
-      if (workoutToDelete) {
-        this.scheduledWorkouts[dateString] = this.scheduledWorkouts[dateString].filter(workout => workout.id !== workoutId);
-        if (this.scheduledWorkouts[dateString].length === 0) {
-          delete this.scheduledWorkouts[dateString];
-        }
-        const user = this.auth.currentUser;
-        if (user) {
-          const scheduledCollection = collection(this.firestore, `users/${user.uid}/workoutInstances`);
-          const query = (await getDocs(scheduledCollection)).docs.find(doc => doc.data()['id'] === workoutId);
-          if (query) {
-            await deleteDoc(doc(this.firestore, `users/${user.uid}/workoutInstances/${query.id}`));
-          }
-        }
-      }
+  async deleteWorkoutFromDate(eventId: string) {
+    const user = this.auth.currentUser;
+    if (user) {
+      const db = getDatabase();
+      const workoutRef = ref(db, `users/${user.uid}/workoutInstances/${eventId}`);
+      await remove(workoutRef); // Use the remove method to delete the workout
+      // Reload the scheduled workouts to refresh the calendar view
+      this.calendarOptions.events = this.loadScheduledWorkouts.bind(this);
     }
   }
 
@@ -275,4 +316,14 @@ export class CalendarComponent implements OnInit {
     this.selectedWorkout = null;
     this.selectedTime = '';
   }
+
+  isPastDay(day: Date | null): boolean {
+    if (!day) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    day.setHours(0, 0, 0, 0); // Normalize to the start of the day
+    return day.getTime() < today.getTime();
+  }
+
 }
+

@@ -59,22 +59,30 @@ export class WorkoutsComponent implements OnInit {
   }
 
   fetchProfileData() {
-    this.userService.getGoogleFitProfileData().subscribe({
-      next: (profileData) => {
-        if (profileData) {
-          this.profileData = profileData;
-          this.fetchWeightAndHeight();
-        } else {
-          this.errorMessage = 'No profile data found.';
-        }
-      },
-      error: (error) => this.errorMessage = 'Error fetching profile data'
-    });       
+    this.userService.getGoogleFitProfileData().then(profileData => {
+      if (profileData) {
+        this.profileData = profileData;
+        this.fetchWeightAndHeight();
+      } else {
+        this.errorMessage = 'No profile data found.';
+      }
+    }).catch(error => {
+      this.errorMessage = 'Error fetching profile data';
+      console.error('Error fetching profile data:', error);
+    });
   }
 
   fetchWeightAndHeight() {
-    this.userService.getUserWeight().subscribe(weight => this.profileData.weight = weight);
-    this.userService.getUserHeight().subscribe(height => this.profileData.height = height);
+    Promise.all([
+      this.userService.getUserWeight(),
+      this.userService.getUserHeight()
+    ]).then(([weight, height]) => {
+      this.profileData.weight = weight;
+      this.profileData.height = height;
+    }).catch(error => {
+      console.error('Error fetching weight and height:', error);
+      this.toastr.error('Could not fetch weight and height.');
+    });
   }
 
   fetchWorkouts(): void {
