@@ -31,17 +31,18 @@ export class NavbarComponent implements OnInit {
   }
 
   fetchProfileData() {
-    this.userService.getGoogleFitProfileData().subscribe({
-      next: (profileData) => {
-        if (profileData) {
-          this.profileData = profileData;
-        } else {
-          this.errorMessage = 'No profile data found.';
-        }
-      },
-      error: (error) => this.errorMessage = 'Error fetching profile data'
-    });    
-  }
+    // Assuming getGoogleFitProfileData returns a Promise
+    this.userService.getGoogleFitProfileData().then(profileData => {
+      if (profileData) {
+        this.profileData = profileData;
+      } else {
+        this.errorMessage = 'No profile data found.';
+      }
+    }).catch(error => {
+      this.errorMessage = 'Error fetching profile data';
+      console.error('Error fetching profile data:', error);
+    });
+  }  
 
   get age(): number | null {
     return this.userService.calculateAge(this.profileData.dob);

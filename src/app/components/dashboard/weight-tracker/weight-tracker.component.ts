@@ -2,6 +2,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { UserService } from '../../../services/user.service';
 import { GFitService } from '../../../services/gfit.service';
 import { CommonModule } from '@angular/common';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-weight-tracker',
@@ -16,7 +17,11 @@ export class WeightTrackerComponent implements OnInit {
   userWeight: any;
   weightGoal: number | null = null;
 
-  constructor(private userService: UserService, private gfitService: GFitService) {}
+  constructor(
+    private userService: UserService, 
+    private gfitService: GFitService,
+    private toastr: ToastrService
+  ) {}
 
   ngOnInit(): void {
     this.fetchWeightAndHeight();
@@ -27,14 +32,22 @@ export class WeightTrackerComponent implements OnInit {
   }
 
   fetchWeightAndHeight() {
-    this.userService.getUserWeight().subscribe(weight => this.profileData.weight = weight);
+    this.userService.getUserWeight().then(weight => {
+      this.profileData.weight = weight;
+    }).catch(error => {
+      console.error('Error fetching weight:', error);
+      this.toastr.error('Could not fetch weight.');
+    });
   }
 
   loadWeightGoal() {
-    this.userService.getUserGoals().subscribe((goals: { weightGoal: null; }) => {
+    this.userService.getUserGoals().then((goals: { weightGoal: number | null; }) => {
       this.weightGoal = goals?.weightGoal || null;
+    }).catch(error => {
+      console.error('Error fetching weight goal:', error);
+      this.toastr.error('Could not fetch weight goal.');
     });
-  }
+  }  
 
   get displayWeight(): string {
     if (!this.profileData.weight) return 'N/A';

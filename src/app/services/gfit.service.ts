@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, from, map, of, switchMap, tap } from 'rxjs'; 
 import { Auth } from '@angular/fire/auth';
-import { doc, getDoc, Firestore } from '@angular/fire/firestore';
+import { Database, ref, get, set } from '@angular/fire/database';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -15,17 +15,17 @@ export class GFitService {
   constructor(
     private http: HttpClient,
     private auth: Auth,
-    private firestore: Firestore
+    private db: Database
   ) {}
 
   private getAccessToken(): Promise<string | null> { 
     return new Promise(async (resolve, reject) => {
       const userId = this.auth.currentUser?.uid;
       if (userId) {
-        const userDocRef = doc(this.firestore, `users/${userId}`);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          resolve(userDoc.data()?.['googleFitAccessToken'] || null);
+        const userTokenRef = ref(this.db, `users/${userId}/googleFitAccessToken`);
+        const snapshot = await get(userTokenRef);
+        if (snapshot.exists()) {
+          resolve(snapshot.val() || null);
         } else {
           resolve(null);
         }
@@ -47,14 +47,14 @@ export class GFitService {
       map((response: any) => {
         const profile = {
           name: response.names?.[0]?.displayName || null,
-          gender: response.genders?.[0]?.value || null, // This might still be null if not set
+          gender: response.genders?.[0]?.value || null,
           profilePicture: response.photos?.[0]?.url || null,
           birthday: response.birthdays?.[0]?.date ? 
           `${response.birthdays[0].date.year}-${response.birthdays[0].date.month}-${response.birthdays[0].date.day}` 
           : null
-      };
+        };
         return profile;
-       })
+      })
     );
   }
 
@@ -78,22 +78,20 @@ export class GFitService {
     return this.getGooglePeopleProfile(); // Fetch profile from Google People API
   }
 
-
   getUserWeightFromGoogleFit(): Observable<number | null> {
     const body = {
       aggregateBy: [{
         dataTypeName: 'com.google.weight',
         dataSourceId: 'derived:com.google.weight:com.google.android.gms:merge_weight'
       }],
-      bucketByTime: { durationMillis: 86400000 }, // Aggregate data by day (24 hours)
-      startTimeMillis: Date.now() - (30 * 24 * 60 * 60 * 1000), // Start time (30 days ago)
-      endTimeMillis: Date.now() // End time (current time)
+      bucketByTime: { durationMillis: 86400000 },
+      startTimeMillis: Date.now() - (30 * 24 * 60 * 60 * 1000),
+      endTimeMillis: Date.now()
     };
   
     return this.fetchGoogleFitData('users/me/dataset:aggregate', body).pipe(
       map((response: any) => {
         if (response.bucket && response.bucket.length > 0) {
-          // Loop through the buckets and get the latest weight value
           for (let i = response.bucket.length - 1; i >= 0; i--) {
             const dataset = response.bucket[i].dataset;
             if (dataset && dataset.length > 0 && dataset[0].point.length > 0) {
@@ -107,7 +105,7 @@ export class GFitService {
       }),
       catchError(err => {
         console.error('Error fetching weight data:', err);
-        return of(null); // Return null in case of error
+        return of(null);
       })
     );
   }
@@ -118,9 +116,9 @@ export class GFitService {
         dataTypeName: 'com.google.weight',
         dataSourceId: 'derived:com.google.weight:com.google.android.gms:merge_weight'
       }],
-      bucketByTime: { durationMillis: 86400000 }, // Aggregate data by day (24 hours)
+      bucketByTime: { durationMillis: 86400000 },
       startTimeMillis: date.getTime(),
-      endTimeMillis: date.getTime() + 86400000 // Add one day to include the whole day
+      endTimeMillis: date.getTime() + 86400000
     };
   
     return this.fetchGoogleFitData('users/me/dataset:aggregate', body).pipe(
@@ -136,7 +134,7 @@ export class GFitService {
       }),
       catchError(err => {
         console.error('Error fetching weight data:', err);
-        return of(null); // Return null in case of error
+        return of(null);
       })
     );
   }  
@@ -147,15 +145,14 @@ export class GFitService {
         dataTypeName: 'com.google.height',
         dataSourceId: 'derived:com.google.height:com.google.android.gms:merge_height'
       }],
-      bucketByTime: { durationMillis: 86400000 }, // Aggregate data by day (24 hours)
-      startTimeMillis: Date.now() - (30 * 24 * 60 * 60 * 1000), // Start time (30 days ago)
-      endTimeMillis: Date.now() // End time (current time)
+      bucketByTime: { durationMillis: 86400000 },
+      startTimeMillis: Date.now() - (30 * 24 * 60 * 60 * 1000),
+      endTimeMillis: Date.now()
     };
   
     return this.fetchGoogleFitData('users/me/dataset:aggregate', body).pipe(
       map((response: any) => {
         if (response.bucket && response.bucket.length > 0) {
-          // Loop through the buckets and get the latest height value
           for (let i = response.bucket.length - 1; i >= 0; i--) {
             const dataset = response.bucket[i].dataset;
             if (dataset && dataset.length > 0 && dataset[0].point.length > 0) {
@@ -169,12 +166,11 @@ export class GFitService {
       }),
       catchError(err => {
         console.error('Error fetching height data:', err);
-        return of(null); // Return null in case of error
+        return of(null);
       })
     );
   }
 
-  // Example method to get steps
   getSteps(): Observable<number> {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
@@ -205,7 +201,6 @@ export class GFitService {
     );
   }
 
-  // Fetch calories from Google Fit
   getCalories(): Observable<number> {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0); 

@@ -5,7 +5,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Auth } from '@angular/fire/auth';
-import { Firestore } from '@angular/fire/firestore';
 import { achievements, getAchievement } from '../../utils/points-and-achievements';
 import { ToastrService } from 'ngx-toastr';
 import { ChartsComponent } from './charts/charts.component';
@@ -25,9 +24,7 @@ import { CaloriesTrackerComponent } from './calories-tracker/calories-tracker.co
 })
 export class DashboardComponent implements OnInit {
   userId: string | null = null;
-  profileData: any = {
-    weight: null,
-  };
+  profileData: any = { weight: null };
   points: number = 0;
   achievements: any[] = [];
   currentAchievement: any = { name: '', badgeUrl: '' };
@@ -40,11 +37,9 @@ export class DashboardComponent implements OnInit {
   nextScheduledWorkout: any = null;
 
   // User weight
-
   isMetric: boolean = true;
-  
-  // Steps and calories
 
+  // Steps and calories
   caloriesBurnedToday: number = 0;
   steps: number = 0;
   stepGoal: number | null = null;
@@ -77,13 +72,16 @@ export class DashboardComponent implements OnInit {
   }
 
   loadUserGoals() {
-    this.userService.getUserGoals().subscribe((goals: { stepGoal: number | null; caloriesGoal: number | null; }) => {
+    this.userService.getUserGoals().then(goals => {
       this.stepGoal = goals.stepGoal;
       this.caloriesGoal = goals.caloriesGoal;
       this.calculateProgress();
+    }).catch(error => {
+      console.error('Error fetching user goals:', error);
+      this.toastr.error('Could not fetch user goals.');
     });
   }
-  
+
   loadGoogleFitData() {
     this.gfitService.getSteps().subscribe(steps => {
       this.steps = steps || 0;
@@ -93,7 +91,7 @@ export class DashboardComponent implements OnInit {
   }
 
   calculateCaloriesFromSteps() {
-    const caloriesPerStep = 0.05;
+    const caloriesPerStep = 0.05; // Modify based on your data
     const caloriesBurnedFromSteps = this.steps * caloriesPerStep;
     this.caloriesBurnedToday += caloriesBurnedFromSteps;
   }
@@ -108,22 +106,33 @@ export class DashboardComponent implements OnInit {
   }
 
   fetchProfileData() {
-    this.userService.getGoogleFitProfileData().subscribe({
-      next: (profileData) => {
-        if (profileData) {
-          this.profileData = profileData;
-          this.fetchWeightAndHeight();
-        } else {
-          this.errorMessage = 'No profile data found.';
-        }
-      },
-      error: (error) => this.errorMessage = 'Error fetching profile data'
-    });    
-  }
+    this.userService.getGoogleFitProfileData().then(profileData => {
+      if (profileData) {
+        this.profileData = profileData;
+        this.fetchWeightAndHeight();
+      } else {
+        this.errorMessage = 'No profile data found.';
+      }
+    }).catch(error => {
+      console.error('Error fetching profile data:', error);
+      this.errorMessage = 'Error fetching profile data';
+    });
+  }  
 
   fetchWeightAndHeight() {
-    this.userService.getUserWeight().subscribe(weight => this.profileData.weight = weight);
-    this.userService.getUserHeight().subscribe(height => this.profileData.height = height);
+    this.userService.getUserWeight().then(weight => {
+      this.profileData.weight = weight;
+    }).catch(error => {
+      console.error('Error fetching weight:', error);
+      this.toastr.error('Could not fetch weight.');
+    });
+  
+    this.userService.getUserHeight().then(height => {
+      this.profileData.height = height;
+    }).catch(error => {
+      console.error('Error fetching height:', error);
+      this.toastr.error('Could not fetch height.');
+    });
   }
 
   get age(): number | null {
@@ -161,18 +170,22 @@ export class DashboardComponent implements OnInit {
       this.numberOfWorkoutsDone = finishedWorkouts.length;
       if (finishedWorkouts.length > 0) {
         this.mostRecentWorkout = finishedWorkouts.reduce((prev, current) =>
-          prev.completedAt.toDate() > current.completedAt.toDate() ? prev : current
+          prev.completedAt > current.completedAt ? prev : current
         );
         const totalMinutes = finishedWorkouts.reduce((sum, workout) => sum + workout.timeSpent, 0);
         this.totalTimeSpent = this.timeService.formatTime(totalMinutes);
+        
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         // Calculate calories burned from finished workouts today
         this.caloriesBurnedToday = finishedWorkouts
-          .filter(workout => workout.completedAt.toDate() >= today)
+          .filter(workout => workout.completedAt >= today)
           .reduce((sum, workout) => sum + workout.totalCalories, 0) || 0; // Default to 0 if no workouts
-        this.calculateCaloriesFromSteps(); // Ensure steps calories are combined
+        
+        // Include steps calories
+        this.calculateCaloriesFromSteps(); 
       }
+      
       // Fetch scheduled workouts
       const scheduledWorkouts = await this.workoutService.getScheduledWorkouts(this.userId);
       if (scheduledWorkouts.length > 0) {
@@ -180,9 +193,9 @@ export class DashboardComponent implements OnInit {
           new Date(prev.scheduledDate) < new Date(current.scheduledDate) ? prev : current
         );
       }
-      // Fetch achievements and points
-      this.fetchUserPoints();
-      // After fetching points, calculate current achievement
+      
+      // Fetch points and achievements
+      await this.fetchUserPoints();
       const points = await this.userService.getUserTotalPoints();
       this.currentAchievement = getAchievement(points);
     } catch (error) {

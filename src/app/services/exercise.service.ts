@@ -4,12 +4,23 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 
 export interface Exercise {
-  name: string; 
-  primaryMuscles: string[];
-  secondaryMuscles: string[];
-  equipment: string;
   category: string;
-  videoUrl?: string; // Optional property for the video URL
+  current: boolean;
+  currentSet: number;
+  done: boolean;
+  equipment: string;
+  force: string;
+  id: string;
+  images: string[];
+  instructions: string[];
+  level: string;
+  mechanic: string;
+  name: string;
+  primaryMuscles: string[];
+  reps: number;
+  secondaryMuscles: string[];
+  sets: number;
+  videoUrl?: string; // Optional if it might not be present for all exercises
 }
 
 @Injectable({

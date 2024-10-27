@@ -31,40 +31,44 @@ export class ChartsComponent {
   async loadMixedChartData(): Promise<void> {
     const currentWeek = this.getCurrentWeekDates();
     const finishedWorkouts = await this.workoutService.getFinishedWorkouts(this.userId!);
-  
     const workoutData = currentWeek.map(date => {
-      const workout = finishedWorkouts.find(w => w.completedAt.toDate().toDateString() === date.toDateString());
+      const workout = finishedWorkouts.find(w => {
+        const workoutDate = new Date(w.completedAt);
+        return workoutDate.getFullYear() === date.getFullYear() &&
+          workoutDate.getMonth() === date.getMonth() &&
+          workoutDate.getDate() === date.getDate();
+      });
       return workout ? { timeSpent: Math.round(workout.timeSpent / 60), name: workout.name } : { timeSpent: 0, name: 'No Workout' };
     });
   
     const calorieData = currentWeek.map(date => {
-      const workout = finishedWorkouts.find(w => w.completedAt.toDate().toDateString() === date.toDateString());
+      const workout = finishedWorkouts.find(w => new Date(w.completedAt).toDateString() === date.toDateString());
       return workout ? Math.round(workout.totalCalories) : 0;
     });
-  
+
     this.mixedChartOptions = {
       chart: {
         height: 350,
         type: 'line',
-        zoom: { enabled: false }
+        zoom: { enabled: false },
       },
       series: [
         {
           name: 'Time Spent (minutes)',
           type: 'area',
-          data: workoutData.map(w => w.timeSpent),
+          data: workoutData.map(w => w.timeSpent ?? 0),
         },
         {
           name: 'Calories Burned (kcal)',
           type: 'line',
-          data: calorieData,
+          data: calorieData.map(c => c ?? 0),
         },
       ],
       fill: {
         colors: ['#16a34a', '#ef4444']
       },
       xaxis: {
-        categories: currentWeek.map(date => date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })), // Format: DD.MM.YY
+        categories: currentWeek.map(date => date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })),
         labels: { style: { colors: 'white' } },
       },
       yaxis: [
@@ -92,7 +96,7 @@ export class ChartsComponent {
         x: {
           formatter: (val, { dataPointIndex }) => {
             const workout = workoutData[dataPointIndex];
-            const dayName = currentWeek[dataPointIndex].toLocaleDateString('en-US', { weekday: 'short' }); // e.g., "Mon"
+            const dayName = currentWeek[dataPointIndex].toLocaleDateString('en-US', { weekday: 'short' });
             return `${dayName}, ${val} - ${workout.name}`;
           }
         },
@@ -129,10 +133,9 @@ export class ChartsComponent {
           fillColors: ['#16a34a', '#ef4444'],
         },
       },
-    }
+    };
   }
   
-
   getCurrentWeekDates(): Date[] {
     const today = new Date();
     const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
